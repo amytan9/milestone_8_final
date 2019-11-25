@@ -1,0 +1,74 @@
+---
+title: "milestone_8_final_attempt"
+author: "Amy Tan"
+date: "11/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(foreign)
+library(haven)
+library(dplyr)
+library(tibble)
+library(stringr)
+library(fs)
+library(tidyverse)
+```
+
+```{r clean_data, echo=FALSE}
+
+# loading datasets in raw-data folder using mixture of fs package, and then using read.csv for CSV files
+
+# updated to version 3.0 of the Stanford data, using the long data set by county to later merge with the Opportunity Insights using county
+
+# made a new directory for raw data using Terminal and placed the downloadd files in # the raw data directory while downloading
+
+download.file("https://stacks.stanford.edu/file/druid:db586ns4974/seda_county_long_cs_v30.csv", "raw-data/stanford30county.csv", mode="wb")
+
+# downloaded the Opportunity Insights dataset for county covariates to later merge by # county
+
+download.file("https://opportunityinsights.org/wp-content/uploads/2018/12/cty_covariates.csv", "raw-data/county_neighborhood_covariates.csv", mode="wb")
+
+# reading in the data I just downloaded 
+
+stanforddata_county <- read.csv("raw-data/stanford30county.csv")
+
+county_covariates <- read.csv("raw-data/county_neighborhood_covariates.csv")
+
+# the county variable was a factor variable instead of a numeric variable, so I made # it numeric to match the county variable in the other dataset
+
+county_covariates$county_num <- as.numeric(county_covariates %>% pull(county))
+
+# also made the state variables numeric because I will need to merge the state and county IDs to match the five-digit FIPS county code in the stanford dataset
+
+county_covariates$state_num <- as.numeric(county_covariates %>% pull(state))
+
+# since the 5-digit FIPS code is formatted such that if there was a county code that # was less than 3 digits, there would be a 0 in front of it, I added 0s to county_num
+
+county_covariates <- county_covariates %>% mutate(county_pad=str_pad(county_num, 3, pad="0","left"))
+
+# I used paste0 to merge the county and state together into one countyid to match the countyid in the other dataset
+
+county_covariates$countyid <- paste0(county_covariates$state_num, county_covariates$county_pad)
+
+# I also made sure that the merged column was numeric to match the other dataset
+
+county_covariates$countyid <- as.numeric(county_covariates %>% pull(countyid))
+
+# I made sure that the countyid in this dataset is numeric as well
+
+stanforddata_county$countyid <- as.numeric(stanforddata_county %>% pull(countyid))
+
+```
+
+```{r merging_data, echo=FALSE}
+
+# I used full_join to keep all the columns intact so that I can compare all variables across the two datasets
+
+x <- full_join(county_covariates, stanforddata_county, by="countyid")
+
+# I made the merged dataset a new csv file to transfer to the app R script
+
+write_csv(x, "milestone_8_app_final_attempt/joined_data2.csv")
+```
