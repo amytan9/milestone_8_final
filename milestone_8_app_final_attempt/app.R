@@ -7,6 +7,7 @@ library(moderndive)
 library(gt)
 library(plotly)
 library(ggplot2)
+library(maps)
 library(tidyverse)
 
 # reading in merged dataset from the prior data cleaning session in Rmd
@@ -21,7 +22,15 @@ countiesVector <- data$countyname %>% unique()
 # I needed to create a new mean of mean scores variable because the scores varied within county,
 # but the predictor variables I am using later in the model does not
 
-clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all))
+clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all)) %>% mutate(hhinc_k = hhinc_mean2000 / 10000)
+
+# read in R vector for state and region
+
+state.fips
+
+region_fips <- state.fips %>% select(fips, region)
+
+clean_data_merged <- left_join(clean_data, region_fips)
 
 # Define UI for application that draws a histogram
 
@@ -124,18 +133,19 @@ ui <- fluidPage(
                                            tableOutput("model"),
                                            p("This is the summary statistics table for a linear regression of mean test scores based 
                                              on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
-                                             (singleparent_share2000) in the county. At first, it was a bit surprising that the coefficient for mean household
-                                             income is 0 since it seems unlikely that household income does not have an effect on
-                                             academic achievement. However, it makes sense because since household income is in terms
+                                             (singleparent_share2000) in the county. Since household income is in terms
                                              of dollars, each additional dollar has a very small effect on mean scores, especially when
-                                             the scores are standardized the way they are. For further analysis, I can make the units for 
-                                             household income in terms of 10,000 dollars instead of one dollar. For the share of single-
+                                             the scores are standardized the way they are. Thus, I made the units for 
+                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
+                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
+                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
                                              parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
                                              the proportion of single-parent households, there is a -.188 decrease in the mean of mean
-                                             scores in the county on average. Both variables have a very small standard error, which says
+                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
                                              that these variables model the scores very well. The p-values are also smaller than .05,
                                              which means that at the 95% significance level, the effects of both variables on mean scores
-                                             are statistically significant and not due to random chance.")
+                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
+                                             so this means that the estimates of the correlation coefficients are statistically significant.")
                                            
                                            )
                                   )
@@ -147,7 +157,8 @@ ui <- fluidPage(
                         How do students' broader social environments impact their academic achievement? I attempt to answer this question by getting the county-level covariates dataset from the Opportunity
                         Insights website (https://opportunityinsights.org/data/) and the stanforddata dataset from the Stanford Education Data Archive (https://exhibits.stanford.edu/data/catalog/db586ns4974).
                         The covariates dataset describes economic and social factors of each county, such as rates of intergenerational mobility and umemployment rates. The stanforddata dataset describes 
-                        various academic variables for 3rd-8th graders across the nation by tract as well. It contains variables for academic achievement and student demographics. I merged these two datasets
+                        various academic variables for 3rd-8th graders across the nation by tract as well. It contains variables for academic achievement and student demographics. The mn_all test score variable
+                        is a standardized test score variable that standardizes scores across different states' tests. More information can be found on the technical codebook on the website. I merged these two datasets
                         together by their FIPS code. I also descriptively analyzed each dataset to find trends within the datasets themselves, such as the correlation between household income and test scores."),
                       br(),
                       p("You can find more of my work on Github: https://github.com/amytan9")
@@ -299,7 +310,7 @@ server <- function(input, output) {
     # this is modeling mean scores using household income and proportion 
     # of single parent households via a linear regression
     
-    get_regression_table(lm(data = clean_data, mean_mn_all ~ hhinc_mean2000 + singleparent_share2000)) 
+    get_regression_table(lm(data = clean_data, mean_mn_all ~ hhinc_k + singleparent_share2000)) 
   })
 }
 
