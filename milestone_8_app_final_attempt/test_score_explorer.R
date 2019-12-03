@@ -17,18 +17,23 @@ data <- read_csv("joined_data2.csv")
 # I made the county name column into a vector so that I can input all the names 
 # at the same time into the drop-down bar later instead of manually writing a list
 
-countiesVector <- data$countyname %>% unique()
+countiesVector <- data$countyname %>%
+  unique()
 
 # I needed to create a new mean of mean scores variable because the scores varied within county,
 # but the predictor variables I am using later in the model does not
 
-clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all)) %>% mutate(hhinc_k = hhinc_mean2000 / 10000)
+clean_data <- data %>% 
+  group_by(countyid) %>%
+  mutate(mean_mn_all = mean(mn_all)) %>%
+  mutate(hhinc_k = hhinc_mean2000 / 10000)
 
 # read in R vector for state and region
 
 state.fips
 
-region_fips <- state.fips %>% select(fips, region)
+region_fips <- state.fips %>%
+  select(fips, region)
 
 clean_data_merged <- left_join(clean_data, region_fips)
 
@@ -274,6 +279,10 @@ server <- function(input, output) {
            x = "States",
            caption = "Data from the Stanford Education Data Archive, 
            https://edopportunity.org/get-the-data/seda-archive-downloads/",
+           
+           # it is hard to include a caption with the data source in plotly, so I opted not
+           # to since it's already in the first plot
+           
            subtitle = "Data from 3rd-8th graders in U.S. counties"
       )
     
