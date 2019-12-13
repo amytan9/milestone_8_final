@@ -1,5 +1,21 @@
 
+
+library(tidyr)
+library(reshape2)
+library(janitor)
+library(gt)
+library(googlesheets4)
+library(infer)
+library(fs)
+library(rstanarm)
+library(reprex)
+library(cowplot)
+library(stringr)
+library(broom)
+library(ggridges)
+library(dplyr)
 library(shiny)
+library(tidyr)
 library(shinyWidgets)
 library(fs)
 library(shinythemes)
@@ -9,6 +25,8 @@ library(plotly)
 library(ggplot2)
 library(maps)
 library(tidyverse)
+
+
 
 # reading in merged dataset from the prior data cleaning session in Rmd
 
@@ -46,12 +64,109 @@ clean_data_merged <- left_join(clean_data, region_fips, by = "fips")
 
 clean_data_merged <- clean_data_merged %>% select(countyid, everything())
 
+clean_data_merged <- clean_data_merged %>% mutate(white_share2010 = (1 - nonwhite_share2010))
+
+clean_data$mn_mfg <- as.numeric(clean_data$mn_mfg)
+
 # this subsets all the data to just 2010 in order to compare the test score variation among different 
 # counties in one particular year for one grade with the share of different racial groups later
 
 temp_ela <- clean_data_merged %>% filter(year == 2010, subject == "ela", grade == 8) 
 temp_math <- clean_data_merged %>% filter(year == 2010, subject == "math", grade == 8) 
 
+# doing one temp aggregated across both subjects 
+
+temp <- clean_data_merged %>% filter(year == 2010, grade == 8) 
+
+hhinc_parent_model <- lm(data = clean_data, mean_mn_all ~ hhinc_k + singleparent_share2000)
+hhinc_summary <- tidy(hhinc_parent_model, conf.int=TRUE, conf.level = .95)
+hhinc_table <- gt(hhinc_summary) %>% 
+  tab_header(title = "Model of Test Scores by Mean Household Income and Share of Single-Parent Households",
+             subtitle = "Data from 3rd-8th graders in 2010") %>% 
+  
+  # shortening the decimal places so the numbers are more digestible
+  
+  fmt_number(columns = vars("estimate", "std.error", "statistic", "p.value", "conf.low", "conf.high"), decimals = 3) %>%
+  
+  # making the columns look nicer by relabelling them
+  cols_label("estimate" = "Coefficient", "std.error" = "Standard Error", "statistic" = "Statistic", "p.value" = "P-value", "conf.low" = "5th Percentile",
+             "conf.high" = "95th Percentile") %>%  
+  
+  # adding source info
+  
+  tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
+
+asn_model <- lm(data = temp, mn_asn ~ share_asian2010)
+asn_summary <- tidy(asn_model, conf.int=TRUE, conf.level = .95)
+asn_table <- gt(asn_summary) %>% 
+  tab_header(title = "Relationship Between Share of Asians in County vs. Asian Students' Test Scores",
+             subtitle = "Data from 8th graders in 2010") %>% 
+  
+  # shortening the decimal places so the numbers are more digestible
+  
+  fmt_number(columns = vars("estimate", "std.error", "statistic", "p.value", "conf.low", "conf.high"), decimals = 3) %>%
+  
+  # making the columns look nicer by relabelling them
+  cols_label("estimate" = "Coefficient", "std.error" = "Standard Error", "statistic" = "Statistic", "p.value" = "P-value", "conf.low" = "5th Percentile",
+             "conf.high" = "95th Percentile") %>%  
+  
+  # adding source info
+  
+  tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
+
+blk_model <- lm(data = temp, mn_blk ~ share_black2010)
+blk_summary <- tidy(blk_model, conf.int=TRUE, conf.level = .95)
+blk_table <- gt(blk_summary) %>% 
+  tab_header(title = "Relationship Between Share of Blacks in County vs. Black Students' Test Scores",
+             subtitle = "Test score data from 8th graders in 2010") %>% 
+  
+  # shortening the decimal places so the numbers are more digestible
+  
+  fmt_number(columns = vars("estimate", "std.error", "statistic", "p.value", "conf.low", "conf.high"), decimals = 3) %>%
+  
+  # making the columns look nicer by relabelling them
+  cols_label("estimate" = "Coefficient", "std.error" = "Standard Error", "statistic" = "Statistic", "p.value" = "P-value", "conf.low" = "5th Percentile",
+             "conf.high" = "95th Percentile") %>%  
+  
+  # adding source info
+  
+  tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
+
+hsp_model <- lm(data = temp, mn_hsp ~ share_hisp2010)
+hsp_summary <- tidy(hsp_model, conf.int=TRUE, conf.level = .95)
+hsp_table <- gt(hsp_summary) %>% 
+  tab_header(title = "Share of Hispanics in County vs. Hispanic Students' Test Scores",
+             subtitle = "Data from 8th graders in 2010") %>% 
+  
+  # shortening the decimal places so the numbers are more digestible
+  
+  fmt_number(columns = vars("estimate", "std.error", "statistic", "p.value", "conf.low", "conf.high"), decimals = 3) %>%
+  
+  # making the columns look nicer by relabelling them
+  cols_label("estimate" = "Coefficient", "std.error" = "Standard Error", "statistic" = "Statistic", "p.value" = "P-value", "conf.low" = "5th Percentile",
+             "conf.high" = "95th Percentile") %>%  
+  
+  # adding source info
+  
+  tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
+
+minority_model <- lm(data = temp, mn_all ~ nonwhite_share2010)
+minority_summary <- tidy(minority_model, conf.int=TRUE, conf.level = .95)
+minority_table <- gt(minority_summary) %>% 
+  tab_header(title = "Share of Non-White Minorities in County vs. Non-White Students' Test Scores",
+             subtitle = "Data from 8th graders in 2010") %>% 
+  
+  # shortening the decimal places so the numbers are more digestible
+  
+  fmt_number(columns = vars("estimate", "std.error", "statistic", "p.value", "conf.low", "conf.high"), decimals = 3) %>%
+  
+  # making the columns look nicer by relabelling them
+  cols_label("estimate" = "Coefficient", "std.error" = "Standard Error", "statistic" = "Statistic", "p.value" = "P-value", "conf.low" = "5th Percentile",
+             "conf.high" = "95th Percentile") %>%  
+  
+  # adding source info
+  
+  tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
 
 # Define UI for application that draws a histogram
 
@@ -133,7 +248,9 @@ ui <- fluidPage(
                                            br(),
                                            p("Comparing both of these plots, there are 8 states that have high scores for both females and males. Some differences 
                                              between the two plots are that Maryland and Pennsylvania appear in the top 10 states for females, and Kansas and Indiana
-                                             appear in the top 10 states for males.")
+                                             appear in the top 10 states for males."),
+                                           br(),
+                                           plotOutput("plot4")
                                            
                                            )
                                   )
@@ -141,17 +258,17 @@ ui <- fluidPage(
                       ),
              
              tabPanel("Model of Scores",
-                      titlePanel("Model of Scores by Household Income and Single-Parent Household"),
+                      titlePanel("Model of Scores by Economic and Racial Demographic Covariates"),
                       
                       # Show a plot of the generated distribution
                       
                       tabsetPanel(id = "tabsMain",
-                                  tabPanel("Model",
+                                  tabPanel("Household Income and Share of Single-Parent Households",
                                            
                                            # here, instead of calling plotlyOutput, we want to call tableOutput since the model
                                            # results are displayed in a summary statistics table
                                            
-                                           tableOutput("model"),
+                                           gt_output("model"),
                                            p("This is the summary statistics table for a linear regression of mean test scores based 
                                              on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
                                              (singleparent_share2000) in the county. Since household income is in terms
@@ -169,12 +286,12 @@ ui <- fluidPage(
                                              so this means that the estimates of the correlation coefficients are statistically significant.")
                                            
                                            ),
-                                  tabPanel("Model",
+                                  tabPanel("Non-White Students",
                                            
                                            # here, instead of calling plotlyOutput, we want to call tableOutput since the model
                                            # results are displayed in a summary statistics table
                                            
-                                           tableOutput("model2"),
+                                           gt_output("model5"),
                                            p("This is the summary statistics table for a linear regression of mean test scores based 
                                              on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
                                              (singleparent_share2000) in the county. Since household income is in terms
@@ -189,7 +306,84 @@ ui <- fluidPage(
                                              that these variables model the scores very well. The p-values are also smaller than .05,
                                              which means that at the 95% significance level, the effects of both variables on mean scores
                                              are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
-                                             so this means that the estimates of the correlation coefficients are statistically significant.")
+                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           br(),
+                                           plotOutput("plot8")
+                                           
+                                           ),
+                                  tabPanel("Asians",
+                                           
+                                           # here, instead of calling plotlyOutput, we want to call tableOutput since the model
+                                           # results are displayed in a summary statistics table
+                                           
+                                           gt_output("model2"),
+                                           p("This is the summary statistics table for a linear regression of mean test scores based 
+                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
+                                             (singleparent_share2000) in the county. Since household income is in terms
+                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
+                                             the scores are standardized the way they are. Thus, I made the units for 
+                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
+                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
+                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
+                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
+                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
+                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
+                                             that these variables model the scores very well. The p-values are also smaller than .05,
+                                             which means that at the 95% significance level, the effects of both variables on mean scores
+                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
+                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           br(),
+                                           plotOutput("plot5")
+                                           
+                                  ),
+                                  tabPanel("Blacks",
+                                           
+                                           # here, instead of calling plotlyOutput, we want to call tableOutput since the model
+                                           # results are displayed in a summary statistics table
+                                           
+                                           gt_output("model3"),
+                                           p("This is the summary statistics table for a linear regression of mean test scores based 
+                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
+                                             (singleparent_share2000) in the county. Since household income is in terms
+                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
+                                             the scores are standardized the way they are. Thus, I made the units for 
+                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
+                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
+                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
+                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
+                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
+                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
+                                             that these variables model the scores very well. The p-values are also smaller than .05,
+                                             which means that at the 95% significance level, the effects of both variables on mean scores
+                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
+                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           br(),
+                                           plotOutput("plot6")
+                                           
+                                  ),
+                                  tabPanel("Hispanics",
+                                           
+                                           # here, instead of calling plotlyOutput, we want to call tableOutput since the model
+                                           # results are displayed in a summary statistics table
+                                           
+                                           gt_output("model4"),
+                                           p("This is the summary statistics table for a linear regression of mean test scores based 
+                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
+                                             (singleparent_share2000) in the county. Since household income is in terms
+                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
+                                             the scores are standardized the way they are. Thus, I made the units for 
+                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
+                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
+                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
+                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
+                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
+                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
+                                             that these variables model the scores very well. The p-values are also smaller than .05,
+                                             which means that at the 95% significance level, the effects of both variables on mean scores
+                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
+                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           br(),
+                                           plotOutput("plot7")
                                            
                                   )
                                   )
@@ -197,6 +391,8 @@ ui <- fluidPage(
              
              tabPanel("About",
                       titlePanel("About This Project"),
+                      p("My name is Amy Tan. I am currently a senior at Harvard studying sociology and economics, and I am particularly interested in issues of educational inequality."),
+                      br(),
                       p("In this project, I used two datasets to figure out if there are any interesting correlations between economic variables and educational variables at the county level nationwide. 
                         How do students' broader social environments impact their academic achievement? I attempt to answer this question by getting the county-level covariates dataset from the Opportunity
                         Insights website (https://opportunityinsights.org/data/) and the stanforddata dataset from the Stanford Education Data Archive (https://exhibits.stanford.edu/data/catalog/db586ns4974).
@@ -326,28 +522,133 @@ server <- function(input, output) {
     
   })
   
+  output$plot4 <- renderPlot({
+   clean_data %>%
+      group_by(county_state) %>%
+      filter(!is.na(mn_mfg)) %>%
+      summarize(mean_mn_mfg = mean(mn_mfg)) %>% 
+      arrange(desc(mean_mn_mfg)) %>% 
+      head(10) %>%
+      select(county_state, mean_mn_mfg) %>% 
+      ggplot(aes(x=reorder(county_state, -mean_mn_mfg), y=mean_mn_mfg)) +
+      geom_col(fill= "purple") +
+      labs(title = "Counties with Highest Female-Male Gap",
+           y = "Mean Estimated Score Gap",
+           x = "Counties",
+           caption = "Data from the Stanford Education Data Archive, 
+           https://edopportunity.org/get-the-data/seda-archive-downloads/",
+           subtitle = "Data from 3rd-8th graders in U.S. counties"
+      ) + 
+      theme(axis.text.x = element_text(angle=45, hjust=1))
+    
+  })
+  
+  
+  output$plot5 <- renderPlot({
+    temp %>% 
+      ggplot(aes(x = share_asian2010, y = mn_asn)) +
+      geom_point() +
+      geom_smooth(method ="lm") + 
+      labs(title = "Share of Asians vs. Asian Students' Test Scores",
+           subtitle = "Test score data from 8th graders in 2010",
+           x = "Share of Asians",
+           y = "Mean Test Scores",
+           caption = "Data from the Stanford Education Data Archive, 
+           https://edopportunity.org/get-the-data/seda-archive-downloads/")
+    
+  })
+  
+  output$plot6 <- renderPlot({
+    temp %>% 
+      ggplot(aes(x = share_black2010, y = mn_blk)) +
+      geom_point() +
+      geom_smooth(method ="lm") + 
+      labs(title = "Share of Blacks vs. Black Students' Test Scores",
+           subtitle = "Test score data from 8th graders in 2010",
+           x = "Share of Blacks",
+           y = "Mean Test Scores",
+           caption = "Data from the Stanford Education Data Archive, 
+           https://edopportunity.org/get-the-data/seda-archive-downloads/")
+    
+  })
+  
+  output$plot7 <- renderPlot({
+    temp %>% 
+      ggplot(aes(x = share_hisp2010, y = mn_hsp)) +
+      geom_point() +
+      geom_smooth(method ="lm") + 
+      labs(title = "Share of Hispanics vs. Hispanic Students' Test Scores",
+           subtitle = "Test score data from 8th graders in 2010",
+           x = "Share of Hispanics",
+           y = "Mean Test Scores",
+           caption = "Data from the Stanford Education Data Archive, 
+           https://edopportunity.org/get-the-data/seda-archive-downloads/")
+    
+  })
+  
+  output$plot8 <- renderPlot({
+    temp %>% 
+      ggplot(aes(x = nonwhite_share2010, y = mn_all)) +
+      geom_point() +
+      geom_smooth(method ="lm") + 
+      labs(title = "Share of Non-White People vs. Students' Test Scores",
+           subtitle = "Test score data from 8th graders in 2010",
+           x = "Share of Non-White People",
+           y = "Mean Test Scores",
+           caption = "Data from the Stanford Education Data Archive, 
+           https://edopportunity.org/get-the-data/seda-archive-downloads/")
+    
+  })
   # for my model, I want to create a regression table that shows the results of the model
   
-  output$model <- renderTable({
-    
-    # an easy way to get this table is to use this and directly put in the lm model
+  output$model <- render_gt({
     
     # this is modeling mean scores using household income and proportion 
     # of single parent households via a linear regression
     
-    get_regression_table(lm(data = clean_data, mean_mn_all ~ hhinc_k + singleparent_share2000)) 
+    hhinc_table
+    
   })
   
   # for my model, I want to create a regression table that shows the results of the model
   
-  output$model2 <- renderTable({
+  output$model2 <- render_gt({
     
     # an easy way to get this table is to use this and directly put in the lm model
     
     # this is modeling mean scores using household income and proportion 
     # of single parent households via a linear regression
+    asn_table
     
-    get_regression_table(lm(data = clean_data, mean_mn_all ~ hhinc_k + singleparent_share2000)) 
+  })
+  
+  output$model3 <- render_gt({
+    
+    # an easy way to get this table is to use this and directly put in the lm model
+    
+    # this is modeling mean scores using household income and proportion 
+    # of single parent households via a linear regression
+    blk_table
+    
+  })
+  
+  output$model4 <- render_gt({
+    
+    # an easy way to get this table is to use this and directly put in the lm model
+    
+    # this is modeling mean scores using household income and proportion 
+    # of single parent households via a linear regression
+    hsp_table
+    
+  })
+  output$model5 <- render_gt({
+    
+    # an easy way to get this table is to use this and directly put in the lm model
+    
+    # this is modeling mean scores using household income and proportion 
+    # of single parent households via a linear regression
+    minority_table
+    
   })
 }
 
