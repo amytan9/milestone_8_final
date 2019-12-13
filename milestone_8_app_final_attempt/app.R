@@ -29,7 +29,8 @@ clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all))
 countystateVector <- clean_data$county_state %>% unique()
 
 
-# read in R vector that labels state and region
+# read in R vector that labels state and region, 
+# for easy categorization later by region if needed
 
 state.fips
 
@@ -41,7 +42,16 @@ region_fips <- state.fips %>% select(fips, region)
 
 clean_data_merged <- left_join(clean_data, region_fips, by = "fips")
 
+# moving the countyid column to the front for easy viewing
+
 clean_data_merged <- clean_data_merged %>% select(countyid, everything())
+
+# this subsets all the data to just 2010 in order to compare the test score variation among different 
+# counties in one particular year for one grade with the share of different racial groups later
+
+temp_ela <- clean_data_merged %>% filter(year == 2010, subject == "ela", grade == 8) 
+temp_math <- clean_data_merged %>% filter(year == 2010, subject == "math", grade == 8) 
+
 
 # Define UI for application that draws a histogram
 
