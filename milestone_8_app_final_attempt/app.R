@@ -22,15 +22,26 @@ countiesVector <- data$countyname %>% unique()
 # I needed to create a new mean of mean scores variable because the scores varied within county,
 # but the predictor variables I am using later in the model does not
 
-clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all)) %>% mutate(hhinc_k = hhinc_mean2000 / 10000)
+clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all)) %>%
+  mutate(hhinc_k = hhinc_mean2000 / 10000) %>% 
+  mutate(county_state = paste0(countyname, ", ", stateabb))
 
-# read in R vector for state and region
+countystateVector <- clean_data$county_state %>% unique()
+
+
+# read in R vector that labels state and region
 
 state.fips
 
+# I only want to take the labels for the region from this vector
+
 region_fips <- state.fips %>% select(fips, region)
 
-clean_data_merged <- left_join(clean_data, region_fips)
+# I am merging the two datasets by FIPS code
+
+clean_data_merged <- left_join(clean_data, region_fips, by = "fips")
+
+clean_data_merged <- clean_data_merged %>% select(countyid, everything())
 
 # Define UI for application that draws a histogram
 
@@ -55,7 +66,7 @@ ui <- fluidPage(
                           
                           # this is the actual inputID that you want to keep constant in the code
                           
-                          pickerInput("selectCounty",
+                          selectizeInput("selectCounty",
                                       
                                       # this is what would show up in the app
                                       
@@ -63,7 +74,7 @@ ui <- fluidPage(
                                       
                                       # this gives a list of all the choices that users can choose from in the drop-down menu
                                       
-                                      choices = countiesVector,
+                                      choices = countystateVector,
                                       
                                       # this is just to define what things to list 
                                       
@@ -88,7 +99,7 @@ ui <- fluidPage(
                                                
                                                # this tells the UI what plot to put 
                                                
-                                               plotlyOutput("plot1")
+                                               plotOutput("plot1")
                                       )
                           )
                         )
@@ -147,7 +158,30 @@ ui <- fluidPage(
                                              are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
                                              so this means that the estimates of the correlation coefficients are statistically significant.")
                                            
-                                           )
+                                           ),
+                                  tabPanel("Model",
+                                           
+                                           # here, instead of calling plotlyOutput, we want to call tableOutput since the model
+                                           # results are displayed in a summary statistics table
+                                           
+                                           tableOutput("model2"),
+                                           p("This is the summary statistics table for a linear regression of mean test scores based 
+                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
+                                             (singleparent_share2000) in the county. Since household income is in terms
+                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
+                                             the scores are standardized the way they are. Thus, I made the units for 
+                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
+                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
+                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
+                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
+                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
+                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
+                                             that these variables model the scores very well. The p-values are also smaller than .05,
+                                             which means that at the 95% significance level, the effects of both variables on mean scores
+                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
+                                             so this means that the estimates of the correlation coefficients are statistically significant.")
+                                           
+                                  )
                                   )
                                   ),
              
@@ -161,8 +195,8 @@ ui <- fluidPage(
                         is a standardized test score variable that standardizes scores across different states' tests. More information can be found on the technical codebook on the website. I merged these two datasets
                         together by their FIPS code. I also descriptively analyzed each dataset to find trends within the datasets themselves, such as the correlation between household income and test scores."),
                       br(),
-                      p("You can find more of my work on Github: https://github.com/amytan9")
-                      
+                      p("You can find more of my work on Github: https://github.com/amytan9"),
+                      HTML('<iframe width="560" height="315" src="https://www.youtube.com/embed/Ka2pWqXS1WA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>')
                       )
              
              )
@@ -176,19 +210,19 @@ server <- function(input, output) {
   
   # use plotly to allow hover text to appear on plots, giving more info about the point
   
-  output$plot1 <- renderPlotly({
+  output$plot1 <- renderPlot({
     
-    ggplotly(data %>%
+     clean_data %>%
                
                # first we want the ggplot to display data by county based on which
                # county(s) the user picks
                
-               filter(countyname %in% input$selectCounty) %>% 
+               filter(county_state %in% input$selectCounty) %>% 
                
                # then, we group by countyname and year to set each data point as results
                # for each county by year
                
-               group_by(countyname, year) %>% 
+               group_by(county_state, year) %>% 
                
                # since there is variation within each county for scores, I just wanted 
                # to take the mean of each score within the county to set that as the
@@ -204,7 +238,7 @@ server <- function(input, output) {
                
                # the color can also be varied to show each county's line on the same graph
                
-               ggplot(aes(x = year, y = mean_score, group = countyname, color = countyname)) +
+               ggplot(aes(x = year, y = mean_score, group = county_state, color = county_state)) +
                geom_point() +
                
                # this connects all the points
@@ -213,28 +247,9 @@ server <- function(input, output) {
                labs(title = "Mean Scores over Time",
                     y = "Mean Score",
                     x = "Year",
-                    fill = "County Name",
+                    color = "County Name",
                     subtitle = "Data from 3rd-8th graders in U.S. counties"
-               )) %>% 
-      
-      # it's possible to add source notes to plotly using this annotations argument
-      
-      layout(annotations = list(text = "Data from the Stanford Education Data Archive, 
-                                https://edopportunity.org/get-the-data/seda-archive-downloads/", 
-                                showarrow = F, 
-                                xref = 'paper', x = 1, 
-                                
-                                # for some reason, I can't change the position of y, or else it disappears
-                                
-                                yref = 'paper', y= -0.1,
-                                
-                                # xanchor sets which corner the text should be, but can't change
-                                # yanchor to move the text down for some reason
-                                
-                                xanchor = 'right', yanchor = 'center', 
-                                xshift = 0, yshift = -1,
-                                font = list(size = 5, color = "black")))
-    
+               )
   })
   
   output$plot2 <- renderPlot({
@@ -304,6 +319,18 @@ server <- function(input, output) {
   # for my model, I want to create a regression table that shows the results of the model
   
   output$model <- renderTable({
+    
+    # an easy way to get this table is to use this and directly put in the lm model
+    
+    # this is modeling mean scores using household income and proportion 
+    # of single parent households via a linear regression
+    
+    get_regression_table(lm(data = clean_data, mean_mn_all ~ hhinc_k + singleparent_share2000)) 
+  })
+  
+  # for my model, I want to create a regression table that shows the results of the model
+  
+  output$model2 <- renderTable({
     
     # an easy way to get this table is to use this and directly put in the lm model
     
