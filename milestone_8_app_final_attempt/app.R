@@ -45,6 +45,8 @@ clean_data <- data %>% group_by(countyid) %>% mutate(mean_mn_all = mean(mn_all))
   mutate(hhinc_k = hhinc_mean2000 / 10000) %>% 
   mutate(county_state = paste0(countyname, ", ", stateabb))
 
+# creating a vector for the drop-down menu, so you can search for a specific county within a state
+
 countystateVector <- clean_data$county_state %>% unique()
 
 
@@ -65,7 +67,11 @@ clean_data_merged <- left_join(clean_data, region_fips, by = "fips")
 
 clean_data_merged <- clean_data_merged %>% select(countyid, everything())
 
+# I created this new variable just to be able to see the proportion of white people easily
+
 clean_data_merged <- clean_data_merged %>% mutate(white_share2010 = (1 - nonwhite_share2010))
+
+# I wanted to make sure that the data analysis on mean test score gaps can be done on a numeric value
 
 clean_data$mn_mfg <- as.numeric(clean_data$mn_mfg)
 
@@ -75,12 +81,23 @@ clean_data$mn_mfg <- as.numeric(clean_data$mn_mfg)
 temp_ela <- clean_data_merged %>% filter(year == 2010, subject == "ela", grade == 8) 
 temp_math <- clean_data_merged %>% filter(year == 2010, subject == "math", grade == 8) 
 
-# doing one temp aggregated across both subjects 
+# doing one temp aggregated across both subjects (ended up using this measure)
 
 temp <- clean_data_merged %>% filter(year == 2010, grade == 8) 
 
+# I wanted to run a linear regression on both the household income variables and single-parent households
+# because I was curious which one had a larger effect, controlling for the other
+
 hhinc_parent_model <- lm(data = clean_data, mean_mn_all ~ hhinc_k + singleparent_share2000)
+
+# this tidy function is part of the broom package and packages all the regression outputs nicely
+
+# you can also change the confidence interval levels here
+
 hhinc_summary <- tidy(hhinc_parent_model, conf.int=TRUE, conf.level = .95)
+
+# it is possible render gt tables in Shiny, using gt_output
+
 hhinc_table <- gt(hhinc_summary) %>% 
   tab_header(title = "Model of Test Scores by Mean Household Income and Share of Single-Parent Households",
              subtitle = "Data from 3rd-8th graders in 2010") %>% 
@@ -96,6 +113,10 @@ hhinc_table <- gt(hhinc_summary) %>%
   # adding source info
   
   tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
+
+# I am going to make a similar regression model as above for each racial group. Here I am making one for Asians
+# I am interested in seeing how the proportions of each racial group affects their respective students' 
+# test scores
 
 asn_model <- lm(data = temp, mn_asn ~ share_asian2010)
 asn_summary <- tidy(asn_model, conf.int=TRUE, conf.level = .95)
@@ -115,6 +136,8 @@ asn_table <- gt(asn_summary) %>%
   
   tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
 
+# making the same linear regression model for blacks
+
 blk_model <- lm(data = temp, mn_blk ~ share_black2010)
 blk_summary <- tidy(blk_model, conf.int=TRUE, conf.level = .95)
 blk_table <- gt(blk_summary) %>% 
@@ -133,6 +156,8 @@ blk_table <- gt(blk_summary) %>%
   
   tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
 
+# here, I am doing yet another linear regression model for Hispanics
+
 hsp_model <- lm(data = temp, mn_hsp ~ share_hisp2010)
 hsp_summary <- tidy(hsp_model, conf.int=TRUE, conf.level = .95)
 hsp_table <- gt(hsp_summary) %>% 
@@ -150,6 +175,8 @@ hsp_table <- gt(hsp_summary) %>%
   # adding source info
   
   tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
+
+# this model is just analyzing the non-white share and its correlation with all students' test scores
 
 minority_model <- lm(data = temp, mn_all ~ nonwhite_share2010 + poor_share2010)
 minority_summary <- tidy(minority_model, conf.int=TRUE, conf.level = .95)
@@ -247,10 +274,19 @@ ui <- fluidPage(
                       
                       tabsetPanel(id = "tabsMain",
                                   tabPanel("Plot",
+                                           
+                                           # it is easy to add text using p
+                                           
                                            p("This section investigates the differences in scores between females and males. Which states have
                                              particularly good outcomes for females or males? In which counties is the gender gap the largest?"),
+                                           
+                                           # to put a different object right underneath, simply do a comma
+                                           
                                            plotOutput("plot2"),
                                            p("This is a plot of the top 10 states with the highest mean female scores across the country."),
+                                           
+                                           #this provides spacing to make the text blocks look nice
+                                           
                                            br(),
                                            plotOutput("plot3"),
                                            p("This is a plot of the top 10 states with the highest mean male scores across the country."),
@@ -284,6 +320,10 @@ ui <- fluidPage(
                                            # results are displayed in a summary statistics table
                                            
                                            gt_output("model"),
+                                           
+                                           # I made sure that each line of code did not have too many characters
+                                           # even though the text block was very long
+                                           
                                            p("This is the summary statistics table for a linear regression of mean test scores based 
                                              on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
                                              (singleparent_share2000) in the county. Since household income is in terms
@@ -318,6 +358,9 @@ ui <- fluidPage(
                                              test scores than the share of non-white share does, which seems to indicate that the economic status of the neighborhood plays a larger
                                              effect on academic performance than the amount of minorities in the county."),
                                            br(),
+                                          
+                                           # I wanted to create space between plots and explanations
+                                           
                                            plotOutput("plot8"),
                                            p("Here is a graph of the share of non-white residents in a county versus all students' test scores. I decided to specifically show data
                                              for one test grade (8th grade) and year (2010) because the demographic data about the county is from 2010, and it would inaccurate to 
@@ -402,10 +445,16 @@ ui <- fluidPage(
                                   )
                                   ),
              
+             # remember the levels of tab panels. While there can be several subsets of panels, you want
+             # to make sure that it is the right level by constantly re-running the app
+             
              tabPanel("About",
                       titlePanel("About This Project"),
                       p("My name is Amy Tan. I am currently a senior at Harvard studying sociology and economics, and I am particularly interested in issues of educational inequality."),
                       br(),
+                      
+                      # the Youtube tutorial on uploading a video was very helpful. Don't forget the '' to wrap around the embedding link
+                      
                       HTML('<iframe width="560" height="315" src="https://www.youtube.com/embed/azJcJoRbhSA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'),
                       p("In this project, I used two datasets to figure out if there are any interesting correlations between economic variables and educational variables at the county level nationwide. 
                         How do students' broader social environments impact their academic achievement? I attempt to answer this question by getting the county-level covariates dataset from the Opportunity
@@ -415,10 +464,17 @@ ui <- fluidPage(
                         is a standardized test score variable that standardizes scores across different states' tests. More information can be found on the technical codebook on the website. I merged these two datasets
                         together by their FIPS code. I also descriptively analyzed each dataset to find trends within the datasets themselves, such as the correlation between household income, share of single-parent households,
                         demographic composition, and test scores."),
+                      br(),
                       p("For more information about how the mean test scores were standardized across the country,
                         please refer to the Stanford Education Data Archive's codebook below:"),
+                      
+                      # this allows you specify which words can correspond to the URL embedded, making it look neater
+                      
                       p(a(href="https://cepa.stanford.edu/sites/default/files/SEDA%20Technical%20Documentation%20Version1_1.pdf", "SEDA Codebook")),
                       p("You can find more of my work on Github:"),
+                      
+                      # the only flaw is that it appears on a separate line
+                      
                       p(a(href="https://github.com/amytan9", "Github"))
                       )
              
@@ -541,21 +597,54 @@ server <- function(input, output) {
   
   output$plot4 <- renderPlot({
    clean_data %>%
+      
+      # I am grouping by each distinct county
+      
       group_by(county_state) %>%
+      
+      # don't want to include any NAs that might skew the analysis
+      
       filter(!is.na(mn_mfg)) %>%
+      
+      # took me forever to realize that if I didn't summarize the mean value,
+      # it would take several values for the same county, which is not the analysis I want
+      # I want to aggregate by county, so it is necessary to summarize
+      
       summarize(mean_mn_mfg = mean(mn_mfg)) %>% 
+      
+      # arranging this here still requires you to reorder the x-axis later because this is just
+      # to select the top 10
+      
       arrange(desc(mean_mn_mfg)) %>% 
       head(10) %>%
-      select(county_state, mean_mn_mfg) %>% 
+      
+      # checking to make sure that counties are not counted twice
+      
+      select(county_state, mean_mn_mfg) %>%
+      
+      # putting a - in front of the variable would put it in descending order within reorder()
+      
       ggplot(aes(x=reorder(county_state, -mean_mn_mfg), y=mean_mn_mfg)) +
+      
+      # you can change bar colors within geom_col
+      
       geom_col(fill= "purple") +
+      
+      # here, just the standard labelling of plots
+      
       labs(title = "Counties with Highest Female-Male Gap",
            y = "Mean Estimated Score Gap",
            x = "Counties",
+           
+           # don't forget the source!
+           
            caption = "Data from the Stanford Education Data Archive, 
            https://edopportunity.org/get-the-data/seda-archive-downloads/",
            subtitle = "Data from 3rd-8th graders in U.S. counties"
       ) + 
+      
+      # the county names were really long, so they overlapped. I turned them so they're readable
+      
       theme(axis.text.x = element_text(angle=45, hjust=1))
     
   })
@@ -566,6 +655,10 @@ server <- function(input, output) {
       ggplot(aes(x = share_asian2010, y = mn_asn)) +
       geom_point() +
       geom_smooth(method ="lm") + 
+      
+      # since the share of Asians is usually very small, I wanted to make the datapoints
+      # more visible by scaling the x-axis by log10
+      
       scale_x_log10() +
       labs(title = "Share of Asians vs. Asian Students' Test Scores",
            subtitle = "Test score data from 8th graders in 2010",
@@ -578,6 +671,9 @@ server <- function(input, output) {
   
   output$plot6 <- renderPlot({
     temp %>% 
+      
+      # same code but for Blacks
+      
       ggplot(aes(x = share_black2010, y = mn_blk)) +
       geom_point() +
       geom_smooth(method ="lm") + 
@@ -592,6 +688,9 @@ server <- function(input, output) {
   
   output$plot7 <- renderPlot({
     temp %>% 
+      
+      # same code but for Hispanics
+      
       ggplot(aes(x = share_hisp2010, y = mn_hsp)) +
       geom_point() +
       geom_smooth(method ="lm") + 
@@ -606,6 +705,10 @@ server <- function(input, output) {
   
   output$plot8 <- renderPlot({
     temp %>% 
+      
+      # same code but for non_white people, and also looking at all students' performance
+      # instead of one racial group because it is unclear which group this would affect the most
+      
       ggplot(aes(x = nonwhite_share2010, y = mn_all)) +
       geom_point() +
       geom_smooth(method ="lm") + 
@@ -618,6 +721,8 @@ server <- function(input, output) {
     
   })
   # for my model, I want to create a regression table that shows the results of the model
+  
+  # the way to render a gt table as opposed to a normal regression table is to do render_gt
   
   output$model <- render_gt({
     
@@ -632,39 +737,26 @@ server <- function(input, output) {
   
   output$model2 <- render_gt({
     
-    # an easy way to get this table is to use this and directly put in the lm model
+    # I didn't realize how easy it was to put a table that's already made in the server
+    # and it will show up once called in the UI
     
-    # this is modeling mean scores using household income and proportion 
-    # of single parent households via a linear regression
     asn_table
     
   })
   
   output$model3 <- render_gt({
-    
-    # an easy way to get this table is to use this and directly put in the lm model
-    
-    # this is modeling mean scores using household income and proportion 
-    # of single parent households via a linear regression
+
     blk_table
     
   })
   
   output$model4 <- render_gt({
     
-    # an easy way to get this table is to use this and directly put in the lm model
-    
-    # this is modeling mean scores using household income and proportion 
-    # of single parent households via a linear regression
     hsp_table
     
   })
   output$model5 <- render_gt({
     
-    # an easy way to get this table is to use this and directly put in the lm model
-    
-    # this is modeling mean scores using household income and proportion 
-    # of single parent households via a linear regression
     minority_table
     
   })
