@@ -24,6 +24,7 @@ library(gt)
 library(plotly)
 library(ggplot2)
 library(maps)
+library(stargazer)
 library(tidyverse)
 
 
@@ -150,11 +151,11 @@ hsp_table <- gt(hsp_summary) %>%
   
   tab_source_note(html("Data from Opportunity Insights and Stanford Education Data Archive."))
 
-minority_model <- lm(data = temp, mn_all ~ nonwhite_share2010)
+minority_model <- lm(data = temp, mn_all ~ nonwhite_share2010 + poor_share2010)
 minority_summary <- tidy(minority_model, conf.int=TRUE, conf.level = .95)
 minority_table <- gt(minority_summary) %>% 
-  tab_header(title = "Share of Non-White Minorities in County vs. Non-White Students' Test Scores",
-             subtitle = "Data from 8th graders in 2010") %>% 
+  tab_header(title = "Share of Non-White Minorities and Poor Residents in County vs. All Students' Test Scores",
+             subtitle = "Test Score Data from 8th graders in 2010") %>% 
   
   # shortening the decimal places so the numbers are more digestible
   
@@ -225,7 +226,13 @@ ui <- fluidPage(
                                                # this tells the UI what plot to put 
                                                
                                                plotOutput("plot1")
-                                      )
+                                      ),
+                                      tabPanel("Explanation",
+                                               p("This plot shows the distribution of mean scores
+                                                 over time for 3rd-8th graders across the U.S. by county.
+                                                 Select two or more counties to see how the trends compare to
+                                                 each other. For an explanation of the dataset, please see the
+                                                 About tab."))
                           )
                         )
                       )
@@ -240,6 +247,8 @@ ui <- fluidPage(
                       
                       tabsetPanel(id = "tabsMain",
                                   tabPanel("Plot",
+                                           p("This section investigates the differences in scores between females and males. Which states have
+                                             particularly good outcomes for females or males? In which counties is the gender gap the largest?"),
                                            plotOutput("plot2"),
                                            p("This is a plot of the top 10 states with the highest mean female scores across the country."),
                                            br(),
@@ -250,7 +259,13 @@ ui <- fluidPage(
                                              between the two plots are that Maryland and Pennsylvania appear in the top 10 states for females, and Kansas and Indiana
                                              appear in the top 10 states for males."),
                                            br(),
-                                           plotOutput("plot4")
+                                           plotOutput("plot4"),
+                                           p("There is a measure of the estimated mean female-male gap in the Stanford Education dataset. Grouping
+                                             by county, this plot shows the counties with the largest female-male gaps across the country."),
+                                           br(),
+                                           p("All of these plots show interesting variations in academic performance by gender that should be further investigated
+                                             in future research. What are the root causes of these gender differences? Could it be due to teacher bias, curriculum,
+                                             culture, etc.? These would be very interesting questions to explore via a more in-depth study.")
                                            
                                            )
                                   )
@@ -258,12 +273,12 @@ ui <- fluidPage(
                       ),
              
              tabPanel("Model of Scores",
-                      titlePanel("Model of Scores by Economic and Racial Demographic Covariates"),
+                      titlePanel("Models of Test Scores with Socioeconomic Covariates"),
                       
                       # Show a plot of the generated distribution
                       
                       tabsetPanel(id = "tabsMain",
-                                  tabPanel("Household Income and Share of Single-Parent Households",
+                                  tabPanel("Household Income and Single-Parent Households",
                                            
                                            # here, instead of calling plotlyOutput, we want to call tableOutput since the model
                                            # results are displayed in a summary statistics table
@@ -286,29 +301,28 @@ ui <- fluidPage(
                                              so this means that the estimates of the correlation coefficients are statistically significant.")
                                            
                                            ),
-                                  tabPanel("Non-White Students",
+                                  tabPanel("Non-White Minorities and Poor Populations",
                                            
-                                           # here, instead of calling plotlyOutput, we want to call tableOutput since the model
-                                           # results are displayed in a summary statistics table
+                                           # here, instead of calling plotlyOutput, we want to call gt_output since the model
+                                           # results are displayed in a summary statistics table using the gt package
                                            
                                            gt_output("model5"),
-                                           p("This is the summary statistics table for a linear regression of mean test scores based 
-                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
-                                             (singleparent_share2000) in the county. Since household income is in terms
-                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
-                                             the scores are standardized the way they are. Thus, I made the units for 
-                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
-                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
-                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
-                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
-                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
-                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
-                                             that these variables model the scores very well. The p-values are also smaller than .05,
-                                             which means that at the 95% significance level, the effects of both variables on mean scores
-                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
-                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           p("This is the summary statistics table for a linear regression of mean test scores for all 3rd-8th graders (mn_all)
+                                              using the share of non-white residents, or minority residents, and share of poor residents as independent variables 
+                                              (nonwhite_share2010 and poor_share2010, respectively). The coefficient 
+                                             for nonwhite_share2010 says that on average, for every .1 increase in the share of non-white residents in a county,
+                                             there is a .0431 decrease in the mean test scores for students in the county. I decided to interpret this at .1 increments because 
+                                             the nonwhite_share2010 variable is a percentage share of the total population, not a binary variable. The p-value is 0, which means
+                                             that at the 95% significance level, it is statistically significant. The coefficient on poor_share 2010 says that for every .1 increase
+                                              in the share of poor people in the county, there is a decrease of .1715 in test scores on average. Interestingly, the share of poor people has a larger effect on 
+                                             test scores than the share of non-white share does, which seems to indicate that the economic status of the neighborhood plays a larger
+                                             effect on academic performance than the amount of minorities in the county."),
                                            br(),
-                                           plotOutput("plot8")
+                                           plotOutput("plot8"),
+                                           p("Here is a graph of the share of non-white residents in a county versus all students' test scores. I decided to specifically show data
+                                             for one test grade (8th grade) and year (2010) because the demographic data about the county is from 2010, and it would inaccurate to 
+                                             extrapolate demographic data from one year to correlate with test score data from all years. Also, selecting for one grade level makes it
+                                             easier to see the linear trends with a fewer number of points plotted.")
                                            
                                            ),
                                   tabPanel("Asians",
@@ -317,23 +331,22 @@ ui <- fluidPage(
                                            # results are displayed in a summary statistics table
                                            
                                            gt_output("model2"),
-                                           p("This is the summary statistics table for a linear regression of mean test scores based 
-                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
-                                             (singleparent_share2000) in the county. Since household income is in terms
-                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
-                                             the scores are standardized the way they are. Thus, I made the units for 
-                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
-                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
-                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
-                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
-                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
-                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
-                                             that these variables model the scores very well. The p-values are also smaller than .05,
-                                             which means that at the 95% significance level, the effects of both variables on mean scores
-                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
-                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           p("This is the summary statistics table for a linear regression of mean test scores for Asian Americans (mn_asn)
+                                              using the share of Asian residents as a independent variable (share_asian2010). The coefficient 
+                                             for share_asian2010 says that on average, for every .1 increase in the share of Asian residents in a county,
+                                             there is a .1021 increase in the mean test scores for Asian students in the county. I decided to interpret this at .1 increments because 
+                                             the share_asian2010 variable is a percentage share of the total population, not a binary variable. The p-value is very close to 0, which means
+                                             that at the 95% significance level, it is statistically significant. There seems to be a large effect of the share of Asians in the community on
+                                              Asian students' achievement, so I wonder if there is a cultural, community-based component to students' academic performance. I decided to investigate this to answer the question
+                                             of whether the share of a certain racial or ethnic group in the surrounding environment affects that group of students' performance.
+                                             Perhaps there could be cultural or social effect on students' achievement if there is a large community of people from the same ethnic or racial group."),
                                            br(),
-                                           plotOutput("plot5")
+                                           plotOutput("plot5"),
+                                           p("Here is a graph of the share of non-white residents in a county versus all students' test scores. I decided to specifically show data
+                                             for one test grade (8th grade) and year (2010) because the demographic data about the county is from 2010, and it would inaccurate to 
+                                             extrapolate demographic data from one year to correlate with test score data from all years. Also, selecting for one grade level makes it
+                                             easier to see the linear trends with a fewer number of points plotted. I scaled this graph's x-axis by log10 because the share of Asian Americans
+                                             in a county is usually small, so a lot of the data points were clustered toward 0 and this gives better visibility of the trend.")
                                            
                                   ),
                                   tabPanel("Blacks",
@@ -342,23 +355,23 @@ ui <- fluidPage(
                                            # results are displayed in a summary statistics table
                                            
                                            gt_output("model3"),
-                                           p("This is the summary statistics table for a linear regression of mean test scores based 
-                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
-                                             (singleparent_share2000) in the county. Since household income is in terms
-                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
-                                             the scores are standardized the way they are. Thus, I made the units for 
-                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
-                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
-                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
-                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
-                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
-                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
-                                             that these variables model the scores very well. The p-values are also smaller than .05,
-                                             which means that at the 95% significance level, the effects of both variables on mean scores
-                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
-                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           p("This is the summary statistics table for a linear regression of mean test scores for Black Americans (mn_blk)
+                                              using the share of black residents as a independent variable (share_black2010). The coefficient 
+                                             for share_black2010 says that on average, for every .1 increase in the share of Black residents in a county,
+                                             there is a .05 decrease in the mean test scores for Black students in the county, meaning that a greater proportion of Black residents
+                                              negatively affects Black students. While the root cause of this is uncertain, there have been studies done in which there are negative effects of 'apartheid'
+                                              schools with predominantly Black or Hispanic kids on students' performance. I decided to interpret this at .1 increments because 
+                                             the share_black2010 variable is a percentage share of the total population, not a binary variable. The p-value is very close to 0, which means
+                                             that at the 95% significance level, it is statistically significant. I decided to investigate this to answer the question
+                                             of whether the share of a certain racial or ethnic group in the surrounding environment affects that group of students' performance.
+                                             Perhaps there could be cultural or social effect on students' achievement if there is a large community of people from the same ethnic or racial group.
+                                             "),
                                            br(),
-                                           plotOutput("plot6")
+                                           plotOutput("plot6"),
+                                           p("Here is a graph of the share of Black residents in a county versus Black students' test scores. I decided to specifically show data
+                                             for one test grade (8th grade) and year (2010) because the demographic data about the county is from 2010, and it would inaccurate to 
+                                             extrapolate demographic data from one year to correlate with test score data from all years. Also, selecting for one grade level makes it
+                                             easier to see the linear trends with a fewer number of points plotted.")
                                            
                                   ),
                                   tabPanel("Hispanics",
@@ -367,23 +380,23 @@ ui <- fluidPage(
                                            # results are displayed in a summary statistics table
                                            
                                            gt_output("model4"),
-                                           p("This is the summary statistics table for a linear regression of mean test scores based 
-                                             on the mean household income in the county (hhinc_mean2000) and the proportion of single-parent households
-                                             (singleparent_share2000) in the county. Since household income is in terms
-                                             of dollars, each additional dollar has a very small effect on mean scores, especially when
-                                             the scores are standardized the way they are. Thus, I made the units for 
-                                             household income in terms of 10,000 dollars instead of one dollar by mutating a new column (hhinc_k) that
-                                             describes household income in terms of 10,000 dollars. There is a coefficient of 0.06 for this variable, meaning that
-                                             on average, for each 10,000 dollar increase in household income, there is a .06 increase in scores. For the share of single-
-                                             parent households, there is a coefficient for -1.88, meaning that for every .1 increase in
-                                             the proportion of single-parent households, there is a -.188 decrease in the mean of mean
-                                             scores in the county on average. Both variables have a very small standard error as well as a high absolute T-statistic value, which says
-                                             that these variables model the scores very well. The p-values are also smaller than .05,
-                                             which means that at the 95% significance level, the effects of both variables on mean scores
-                                             are statistically significant and not due to random chance. Furthermore, 0 is not in any of the confidence intervals,
-                                             so this means that the estimates of the correlation coefficients are statistically significant."),
+                                           p("This is the summary statistics table for a linear regression of mean test scores for Hispanic Americans (mn_hsp)
+                                              using the share of Hispanic residents as a independent variable (share_hisp2010). The coefficient 
+                                             for share_hisp2010 says that on average, for every .1 increase in the share of Hispanic residents in a county,
+                                             there is a .015 decrease in the mean test scores for Hispanic students in the county, meaning that a greater proportion of Hispanic residents
+                                             negatively affects Hispanic students, albeit to a small degree. While the root cause of this is uncertain, there have been studies done in which there are negative effects of 'apartheid'
+                                             schools with predominantly Black or Hispanic kids on students' performance. I decided to interpret this at .1 increments because 
+                                             the share_black2010 variable is a percentage share of the total population, not a binary variable. The p-value is very close to 0, which means
+                                             that at the 95% significance level, it is statistically significant. I decided to investigate this to answer the question
+                                             of whether the share of a certain racial or ethnic group in the surrounding environment affects that group of students' performance.
+                                             Perhaps there could be cultural or social effect on students' achievement if there is a large community of people from the same ethnic or racial group.
+                                             "),
                                            br(),
-                                           plotOutput("plot7")
+                                           plotOutput("plot7"),
+                                           p("Here is a graph of the share of Hispanic residents in a county versus Hispanic students' test scores. I decided to specifically show data
+                                             for one test grade (8th grade) and year (2010) because the demographic data about the county is from 2010, and it would inaccurate to 
+                                             extrapolate demographic data from one year to correlate with test score data from all years. Also, selecting for one grade level makes it
+                                             easier to see the linear trends with a fewer number of points plotted.")
                                            
                                   )
                                   )
@@ -393,16 +406,20 @@ ui <- fluidPage(
                       titlePanel("About This Project"),
                       p("My name is Amy Tan. I am currently a senior at Harvard studying sociology and economics, and I am particularly interested in issues of educational inequality."),
                       br(),
+                      HTML('<iframe width="560" height="315" src="https://www.youtube.com/embed/azJcJoRbhSA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'),
                       p("In this project, I used two datasets to figure out if there are any interesting correlations between economic variables and educational variables at the county level nationwide. 
                         How do students' broader social environments impact their academic achievement? I attempt to answer this question by getting the county-level covariates dataset from the Opportunity
-                        Insights website (https://opportunityinsights.org/data/) and the stanforddata dataset from the Stanford Education Data Archive (https://exhibits.stanford.edu/data/catalog/db586ns4974).
+                        Insights website (https://opportunityinsights.org/data/) and the dataset from the Stanford Education Data Archive (https://exhibits.stanford.edu/data/catalog/db586ns4974).
                         The covariates dataset describes economic and social factors of each county, such as rates of intergenerational mobility and umemployment rates. The stanforddata dataset describes 
                         various academic variables for 3rd-8th graders across the nation by tract as well. It contains variables for academic achievement and student demographics. The mn_all test score variable
                         is a standardized test score variable that standardizes scores across different states' tests. More information can be found on the technical codebook on the website. I merged these two datasets
-                        together by their FIPS code. I also descriptively analyzed each dataset to find trends within the datasets themselves, such as the correlation between household income and test scores."),
-                      br(),
-                      p("You can find more of my work on Github: https://github.com/amytan9"),
-                      HTML('<iframe width="560" height="315" src="https://www.youtube.com/embed/Ka2pWqXS1WA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>')
+                        together by their FIPS code. I also descriptively analyzed each dataset to find trends within the datasets themselves, such as the correlation between household income, share of single-parent households,
+                        demographic composition, and test scores."),
+                      p("For more information about how the mean test scores were standardized across the country,
+                        please refer to the Stanford Education Data Archive's codebook below:"),
+                      p(a(href="https://cepa.stanford.edu/sites/default/files/SEDA%20Technical%20Documentation%20Version1_1.pdf", "SEDA Codebook")),
+                      p("You can find more of my work on Github:"),
+                      p(a(href="https://github.com/amytan9", "Github"))
                       )
              
              )
@@ -549,6 +566,7 @@ server <- function(input, output) {
       ggplot(aes(x = share_asian2010, y = mn_asn)) +
       geom_point() +
       geom_smooth(method ="lm") + 
+      scale_x_log10() +
       labs(title = "Share of Asians vs. Asian Students' Test Scores",
            subtitle = "Test score data from 8th graders in 2010",
            x = "Share of Asians",

@@ -1,0 +1,12 @@
+name: test_score_explorer
+title: test_score_explorer
+username:
+account: amytan9
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1598517
+bundleId: 2666706
+url: https://amytan9.shinyapps.io/test_score_explorer/
+when: 1576290006.06013
+asMultiple: FALSE
+asStatic: FALSE
