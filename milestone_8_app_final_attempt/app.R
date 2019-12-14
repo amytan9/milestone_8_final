@@ -268,12 +268,12 @@ ui <- fluidPage(
              # repeat the same tabPanel code for other tabs, changing the titles
              
              tabPanel("Gender Differences in Scores",
-                      titlePanel("States with Highest Scores by Gender"),
+                      titlePanel("Exploring Gender Differences in Academic Achievement"),
                       
                       # Show a plot of the generated distribution
                       
                       tabsetPanel(id = "tabsMain",
-                                  tabPanel("Plot",
+                                  tabPanel("States with Best Test Scores by Gender",
                                            
                                            # it is easy to add text using p
                                            
@@ -293,8 +293,11 @@ ui <- fluidPage(
                                            br(),
                                            p("Comparing both of these plots, there are 8 states that have high scores for both females and males. Some differences 
                                              between the two plots are that Maryland and Pennsylvania appear in the top 10 states for females, and Kansas and Indiana
-                                             appear in the top 10 states for males."),
-                                           br(),
+                                             appear in the top 10 states for males.")
+                                           
+                                           ),
+                                  tabPanel("Counties with Largest Gender Gaps",
+                                           
                                            plotOutput("plot4"),
                                            p("There is a measure of the estimated mean female-male gap in the Stanford Education dataset. Grouping
                                              by county, this plot shows the counties with the largest female-male gaps across the country."),
@@ -303,8 +306,7 @@ ui <- fluidPage(
                                              in future research. What are the root causes of these gender differences? Could it be due to teacher bias, curriculum,
                                              culture, etc.? These would be very interesting questions to explore via a more in-depth study.")
                                            
-                                           )
-                                  )
+                                  ))
                       
                       ),
              
@@ -450,7 +452,8 @@ ui <- fluidPage(
              
              tabPanel("About",
                       titlePanel("About This Project"),
-                      p("My name is Amy Tan. I am currently a senior at Harvard studying sociology and economics, and I am particularly interested in issues of educational inequality."),
+                      p("My name is Amy Tan. I am currently a senior at Harvard studying sociology and economics, and I am particularly interested in issues of educational inequality.
+                        If you have any questions or comments, please email me at atan@college.harvard.edu."),
                       br(),
                       
                       # the Youtube tutorial on uploading a video was very helpful. Don't forget the '' to wrap around the embedding link
