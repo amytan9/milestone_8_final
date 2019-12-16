@@ -5,8 +5,8 @@ account: amytan9
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1598517
-bundleId: 2666804
+bundleId: 2670464
 url: https://amytan9.shinyapps.io/test_score_explorer/
-when: 1576294757.13189
+when: 1576457245.68213
 asMultiple: FALSE
 asStatic: FALSE

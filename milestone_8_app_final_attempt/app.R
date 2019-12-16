@@ -27,7 +27,9 @@ library(maps)
 library(stargazer)
 library(tidyverse)
 
-
+# The second tab on the app seems to disconnect in the online version, but it works fine
+# locally. This seems to be a problem with the server memory. I tried to fix this issue for the past
+# few days, but no solutions worked. Please use the local version to view the "Gender" tab.
 
 # reading in merged dataset from the prior data cleaning session in Rmd
 
