@@ -1,0 +1,56 @@
+---
+title: "opportunity_insights"
+author: "Amy Tan"
+date: "2/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(foreign)
+library(haven)
+library(dplyr)
+library(tibble)
+library(stringr)
+library(fs)
+library(tidyverse)
+
+```
+
+```{r}
+
+# all_outcomes <- read.csv("raw-data/county_outcomes.csv")
+
+# all_outcomes %>% glimpse()
+
+# all_outcome data is too big so using different dataset instead for only
+# household income and incarceration rates
+
+download.file("https://opportunityinsights.org/wp-content/uploads/2018/10/county_outcomes_simple.csv", "raw-data/county_outcomes_simple.csv", mode="wb")
+
+oi_county_outcomes <- read.csv("raw-data/county_outcomes_simple.csv")
+
+# the county variable was a factor variable instead of a numeric variable, so I made # it numeric to match the county variable in the other dataset
+
+oi_county_outcomes$county_num <- as.numeric(oi_county_outcomes %>% pull(county))
+
+# also made the state variables numeric because I will need to merge the state and county IDs to match the five-digit FIPS county code in the stanford dataset
+
+oi_county_outcomes$state_num <- as.numeric(oi_county_outcomes %>% pull(state))
+
+# since the 5-digit FIPS code is formatted such that if there was a county code that # was less than 3 digits, there would be a 0 in front of it, I added 0s to county_num
+
+oi_county_outcomes <- oi_county_outcomes %>% 
+  mutate(county_pad=str_pad(county_num, 3, pad="0","left"))
+
+# I used paste0 to merge the county and state together into one countyid to match the countyid in the other dataset
+
+oi_county_outcomes$countyid <- paste0(oi_county_outcomes$state_num, oi_county_outcomes$county_pad)
+
+# I also made sure that the merged column was numeric to merge with other datasets later
+
+oi_county_outcomes$countyid <- as.numeric(oi_county_outcomes %>% pull(countyid))
+
+
+```
+
