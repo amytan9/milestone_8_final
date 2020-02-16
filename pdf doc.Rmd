@@ -1,0 +1,77 @@
+---
+title: "pdf doc"
+author: "Amy Tan"
+date: "12/13/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(tidyr)
+library(reshape2)
+library(janitor)
+library(gt)
+library(googlesheets4)
+library(infer)
+library(fs)
+library(rstanarm)
+library(reprex)
+library(cowplot)
+library(stringr)
+library(broom)
+library(ggridges)
+library(dplyr)
+library(shiny)
+library(tidyr)
+library(shinyWidgets)
+library(fs)
+library(shinythemes)
+library(moderndive)
+library(gt)
+library(plotly)
+library(ggplot2)
+library(maps)
+library(stargazer)
+library(tidyverse)
+```
+
+```{r, results = 'asis'}
+
+stargazer(blk_summary, type = 'html')
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+,
+                                           br(),
+                                           plotOutput("plot4"),
+                                           p("There is a measure of the estimated mean female-male gap in the Stanford Education dataset. Grouping
+                                             by county, this plot shows the counties with the largest female-male gaps across the country."),
+                                           br(),
+                                           p("All of these plots show interesting variations in academic performance by gender that should be further investigated
+                                             in future research. What are the root causes of these gender differences? Could it be due to teacher bias, curriculum,
+                                             culture, etc.? These would be very interesting questions to explore via a more in-depth study.")
+```
+

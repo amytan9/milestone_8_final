@@ -1,0 +1,11 @@
+---
+title: "education.pdf"
+author: "Amy Tan"
+date: "12/12/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+I want to try creating a PDF here.
