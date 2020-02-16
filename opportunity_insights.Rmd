@@ -51,6 +51,113 @@ oi_county_outcomes$countyid <- paste0(oi_county_outcomes$state_num, oi_county_ou
 
 oi_county_outcomes$countyid <- as.numeric(oi_county_outcomes %>% pull(countyid))
 
+```
+
+
+```{r}
+download.file("https://stacks.stanford.edu/file/druid:db586ns4974/seda_county_poolsub_cs_v30.csv", "raw-data/seda_county_poolsub_cs.csv", mode="wb")
+
+# does not have grade or year (use original long dataset instead if necessary),
+# but has scores, average learning rate, and trend in average test scores
+
+county_poolsub <- read.csv("raw-data/seda_county_poolsub_cs.csv")
+
+```
+
+```{r }
+download.file("https://stacks.stanford.edu/file/druid:db586ns4974/SEDA_cov_county_pool_v30.csv", "raw-data/seda_cov_county_pool.csv", mode="wb")
+
+seda_cov <- read.csv("raw-data/seda_cov_county_pool.csv")
+
+seda_full <- full_join(county_poolsub, seda_cov, by="countyid")
+
+# full dataset
+
+seda_oi <- full_join(seda_full, oi_county_outcomes, by="countyid")
+
+```
+
+```{r}
+
+# regressions on intergenerational mobility and avg test scores
+
+# right now, test scores are still significant with all these controls 
+
+kfr_avg_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rsecdnec, data = seda_oi)
+
+# when you add the composite SES score, the significance of test scores go away
+
+kfr_avg_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + sesavgall + rsecdnec + rswhtblk, data = seda_oi)
+
+summary(kfr_avg_math)
+summary(kfr_avg_math_1)
+
+# do the exact same thing with ELA
+
+kfr_avg_ela = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rsecdnec, data = seda_oi)
+
+kfr_avg_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + sesavgall + rsecdnec + rswhtblk, data = seda_oi)
+
+summary(kfr_avg_ela)
+
+# interesting result because for ELA (and NOT math), test scores are still
+# significant for intergenerational mobility regardless of SES + race
+
+summary(kfr_avg_ela_1)
+
+```
+
+```{r}
+# regressions for intergenerational mobility and average learning rate
+
+kfr_grd_math = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_grd_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+
+# no matter which controls you add in, average learning rate (how much a grade
+# learns over time) is still significant for intergenerational mobility
+
+summary(kfr_grd_math)
+summary(kfr_grd_math_1)
+
+kfr_grd_ela = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_grd_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+
+# same results of significance for ELA
+
+summary(kfr_grd_ela)
+summary(kfr_grd_ela_1)
+
+```
+```{r}
+kfr_coh_math = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_coh_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+
+# improvement of scores for a school over time matters for intergen mobility
+
+summary(kfr_coh_math)
+summary(kfr_coh_math_1)
+
+kfr_coh_ela = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_coh_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+
+# same results for ELA
+
+summary(kfr_grd_ela)
+summary(kfr_grd_ela_1)
+
+
+```
+```{r}
+# regressions on the correlations between diversity within school and scores
+
+div_score <- lm(mn_avg_mth_ol~ rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+
+# interesting that exposure to other ECD is not as important for math as it is
+# for ELA
+summary(div_score)
+
+div_score_ela <-lm(mn_avg_ela_ol~ rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+summary(div_score_ela) 
 
 ```
 
