@@ -13,7 +13,11 @@ library(dplyr)
 library(tibble)
 library(stringr)
 library(fs)
+library(devtools)
+library(ggthemr)
 library(tidyverse)
+
+
 
 ```
 
@@ -108,6 +112,27 @@ summary(kfr_avg_ela_1)
 ```
 
 ```{r}
+
+# maybe customize if have time: 
+# ggthemr("fresh") 
+# ggthemr_reset()
+
+# plot of intergenerational mobility and avg test scores
+
+mob_avg_ela_plot <- seda_oi %>% 
+  ggplot(aes(x=mn_avg_ela_ol, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Intergenerational Mobility and ELA Test Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized ELA Score",
+       y = "Household Income Percentile for Children From 25th Percentile") +
+  theme_bw()
+
+```
+
+```{r}
 # regressions for intergenerational mobility and average learning rate
 
 kfr_grd_math = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk + rsecdnec, data = seda_oi)
@@ -128,6 +153,7 @@ summary(kfr_grd_ela)
 summary(kfr_grd_ela_1)
 
 ```
+
 ```{r}
 kfr_coh_math = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rsecdnec, data = seda_oi)
 kfr_coh_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
@@ -137,16 +163,17 @@ kfr_coh_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rsecdnec 
 summary(kfr_coh_math)
 summary(kfr_coh_math_1)
 
-kfr_coh_ela = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk + rsecdnec, data = seda_oi)
-kfr_coh_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
+kfr_coh_ela = lm(kfr_pooled_pooled_p25 ~ mn_coh_ela_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_coh_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_coh_ela_ol + rswhtblk + rsecdnec + sesavgall, data = seda_oi)
 
 # same results for ELA
 
-summary(kfr_grd_ela)
-summary(kfr_grd_ela_1)
+summary(kfr_coh_ela)
+summary(kfr_coh_ela_1)
 
 
 ```
+
 ```{r}
 # regressions on the correlations between diversity within school and scores
 
