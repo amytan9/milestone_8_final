@@ -15,6 +15,7 @@ library(stringr)
 library(fs)
 library(devtools)
 library(ggthemr)
+library(cowplot)
 library(tidyverse)
 
 
@@ -69,16 +70,46 @@ county_poolsub <- read.csv("raw-data/seda_county_poolsub_cs.csv")
 ```
 
 ```{r }
+# covariate data on SES variables 
+
 download.file("https://stacks.stanford.edu/file/druid:db586ns4974/SEDA_cov_county_pool_v30.csv", "raw-data/seda_cov_county_pool.csv", mode="wb")
 
 seda_cov <- read.csv("raw-data/seda_cov_county_pool.csv")
 
-seda_full <- full_join(county_poolsub, seda_cov, by="countyid")
+# more detailed data on racial achievement gaps
 
+download.file("https://stacks.stanford.edu/file/druid:db586ns4974/seda_county_long_cs_v30.csv", "raw-data/seda_county_long.csv", mode="wb")
+
+seda_long <- read.csv("raw-data/seda_county_long.csv")
+
+
+```
+
+```{r}
+# merging data together
+# example code
+left_join(x, y, by='Flag') %>%
+                left_join(., z, by='Flag')
+
+# smaller dataset by only covariates, not the full long test score data from SEDA
+seda_oi_cov <- full_join(county_poolsub, seda_cov, by="countyid") %>% 
+  full_join(., oi_county_outcomes, by = "countyid")
+
+# all SEDA data in one dataset
+seda_cov_joined <-full_join(county_poolsub, seda_cov, by="countyid") %>% 
+  full_join(., seda_long, by = "countyid")
+
+# SEDA long test score data and covariates datasets only
+seda_scores_cov <- full_join(seda_long, seda_cov, by = "countyid")
+  
 # full dataset
+seda_oi <- full_join(county_poolsub, seda_cov, by="countyid") %>% 
+  full_join(., seda_long, by = "countyid") %>% 
+  full_join(., oi_county_outcomes, by = "countyid")
 
-seda_oi <- full_join(seda_full, oi_county_outcomes, by="countyid")
+# full dataset = seda_oi
 
+#seda_oi <- full_join(seda_full, oi_county_outcomes, by="countyid")
 ```
 
 ```{r}
@@ -129,6 +160,182 @@ mob_avg_ela_plot <- seda_oi %>%
        x = "Mean Standardized ELA Score",
        y = "Household Income Percentile for Children From 25th Percentile") +
   theme_bw()
+
+```
+```{r}
+# plots of intergenerational mobility rates with different percentage of economically disadvantaged students
+
+# subsetting the data
+perecd_25 <- seda_oi %>% 
+  filter(perecd <= .25) %>% 
+  ggplot(aes(x=mn_all, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Intergenerational Mobility and ELA Test Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized ELA Score",
+       y = "Household Income Percentile for Children From 25th Percentile") +
+  theme_bw()
+
+
+perecd_50 <- seda_oi_cov %>% 
+  filter(perecd <=.50 & perecd >.25) %>% 
+  ggplot(aes(x=mn_avg_mth_eb, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Intergenerational Mobility and ELA Test Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized ELA Score",
+       y = "Household Income Percentile for Children From 25th Percentile") +
+  theme_bw()  
+
+
+
+```
+
+```{r}
+# plots of school segregation on test scores by racial group (use seda_oi)
+
+# Variables:
+# rswhtblk
+# rswhthsp
+# rsecdnec
+# 
+# mn_wht
+# mn_asn
+# mn_blk
+# mn_hsp
+# mn_ecd
+# mn_nec
+
+rswhtblk_blk <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_blk, y= rswhtblk)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Black-White Segregation and Black Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw()  
+
+rswhtblk_wht <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_wht, y= rswhtblk)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Black-White Segregation and White Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw() 
+
+rswhtblk_comb_plot <- plot_grid(rswhtblk_blk, rswhtblk_wht)
+
+# rswhtblk_blk_1 <- seda_scores_cov %>%
+#   ggplot(aes(x=mn_blk, y= rswhtblk)) +
+#   geom_point(alpha=.5) +
+#   geom_smooth(method=lm, se= FALSE)
+#
+# rswhtblk_wht_1 <- seda_scores_cov %>%
+#   ggplot(aes(x=mn_wht, y= rswhtblk)) +
+#   geom_point(alpha=.5) +
+#   geom_smooth(method=lm, se= FALSE)
+
+# # --- test---
+# plot_row <- plot_grid(rswhtblk_blk_1, rswhtblk_wht_1)
+# 
+# # now add the title
+# title <- ggdraw() + 
+#   draw_label(
+#     "Black-White Segregation and Test Scores by Race",
+#     fontface = 'bold',
+#     x = 0,
+#     hjust = 0
+#   ) +
+#   theme(
+#     # add margin on the left of the drawing canvas,
+#     # so title is aligned with left edge of first plot
+#     plot.margin = margin(0, 0, 0, 7)
+#   )
+# x <-plot_grid(
+#   title, plot_row,
+#   ncol = 1,
+#   # rel_heights values control vertical title margins
+#   rel_heights = c(0.1, 1),
+#   labels = c("Black Students", "White Students")
+# )
+# 
+# 
+# 
+# title_theme <- ggdraw() +
+#   draw_label("Socio-economic measures", 
+#              fontfamily = theme_georgia()$text$family, 
+#              fontface = theme_georgia()$plot.title$face, x = 0.05, hjust = 0)
+# plot_grid(title_theme, gridded, ncol = 1, rel_heights = c(0.2, 1))
+
+
+rswhthsp_hsp <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_hsp, y= rswhthsp)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Hispanic-White Segregation and Hispanic Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw() 
+
+
+rswhthsp_wht <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_wht, y= rswhthsp)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Hispanic-White Segregation and White Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw()  
+
+rswhthsp_wht <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_wht, y= rswhthsp)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "Hispanic-White Segregation and White Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw()  
+
+rsecdnec_ecd <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_ecd, y= rsecdnec)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "ECD/Non-ECD Segregation and ECD Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw()  
+
+rsecdnec_nec <- seda_scores_cov %>% 
+  ggplot(aes(x=mn_nec, y= rsecdnec)) +
+  geom_point(alpha=.5) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(title = "ECD/Non-ECD Segregation and Non-ECD Students' Scores",
+       subtitle = "National Data on 3rd-8th graders, 2008-2016",
+       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+       x = "Mean Standardized Score",
+       y = "Relative Diversity Index") +
+  theme_bw()  
+
+rsecdnec_comb_plot <- plot_grid(rsecdnec_ecd, rsecdnec_nec)
+
+# maybe add in subsetting by income later?
 
 ```
 
