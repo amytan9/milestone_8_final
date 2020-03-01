@@ -116,20 +116,24 @@ seda_oi <- full_join(county_poolsub, seda_cov, by="countyid") %>%
 
 # right now, test scores are still significant with all these controls 
 
-kfr_avg_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_avg_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
 
 # when you add the composite SES score, the significance of test scores go away
 
-kfr_avg_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + sesavgall + rsecdnec + rswhtblk, data = seda_oi)
+kfr_avg_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+
+kfr_avg_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
 
 summary(kfr_avg_math)
 summary(kfr_avg_math_1)
 
 # do the exact same thing with ELA
 
-kfr_avg_ela = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rsecdnec, data = seda_oi)
+kfr_avg_ela = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
 
-kfr_avg_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + sesavgall + rsecdnec + rswhtblk, data = seda_oi)
+kfr_avg_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+
+kfr_avg_ela_2 =  lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
 
 summary(kfr_avg_ela)
 
@@ -137,6 +141,17 @@ summary(kfr_avg_ela)
 # significant for intergenerational mobility regardless of SES + race
 
 summary(kfr_avg_ela_1)
+
+```
+
+```{r}
+# regression table for average test scores by subject on intergenerational mobility
+
+stargazer(kfr_avg_math, kfr_avg_math_1, kfr_avg_math_2, kfr_avg_ela, kfr_avg_ela_1, kfr_avg_ela_2,
+          type="html", 
+          dep.var.labels=c("Intergenerational Mobility"),
+          covariate.labels=c("Standardized Mean Math Score", "Standardized Mean ELA Score", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
+          column.labels = c("Without Controls", "With SES Composite", "With Additional Controls", "Without Controls","With SES Composite", "With Additional Controls"), out="kfr_avg_math_ela.html")
 
 ```
 
@@ -154,13 +169,15 @@ mob_avg_ela_plot <- seda_oi_cov %>%
   ggplot(aes(x=mn_avg_ela_ol, y= kfr_pooled_pooled_p25, size= tot_asmts_ela)) +
   geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Intergenerational Mobility and ELA Test Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized ELA Score",
-       y = "Household Income Percentile for Children From 25th Percentile") +
+  labs(x = "Mean ELA Score",
+       y = "Intergenerational Mobility (P25)") +
   theme_bw() +
   guides(size = FALSE)
+
+# took out titles for the cowplot
+# title = "Intergenerational Mobility and ELA Test Scores",
+#        subtitle = "National Data on 3rd-8th graders, 2008-2016",
+#        caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
 
 ggsave(mob_avg_ela_plot, file = "mob_avg_ela_plot.png")
 
@@ -169,20 +186,95 @@ mob_avg_math_plot <- seda_oi_cov %>%
   ggplot(aes(x=mn_avg_mth_ol, y= kfr_pooled_pooled_p25, size= tot_asmts_mth)) +
   geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Intergenerational Mobility and ELA Test Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Math Score",
-       y = "Household Income Percentile for Children From 25th Percentile") +
+  labs(x = "Mean Math Score",
+       y = "Intergenerational Mobility (P25)") +
   theme_bw() +
   guides(size = FALSE)
 
 ggsave(file = "mob_avg_mth_plot.png")
-   
 
-#scale_size(range = c(.1, 10), name="Total Number of Tests")
+# kinda ugly when it's two panels, so maybe unnecessary?
 
+mob_test_by_subject <- plot_grid(mob_avg_math_plot, mob_avg_ela_plot, 
+  label_size = 5,
+  label_x = 0, label_y = 0,
+  hjust = -0.5, vjust = -0.5,
+  rel_heights = c(6,6)
+  )
 
+ggsave("mob_test_by_subject.png")
+
+# diversity measures by intergen mob
+
+# black-white relative diversity index
+
+mob_rswhtblk_all <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rswhtblk, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "Black-White Diversity Index",
+       y = "Intergenerational Mobility (P25)") +
+  theme_bw()
+
+ggsave("mob_rswhtblk_all.png")
+
+mob_rswhtblk_blk <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rswhtblk, y= kfr_black_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "Black-White Diversity Index",
+       y = "Intergenerational Mobility for Blacks (P25)") +
+  theme_bw()
+
+ggsave("mob_rswhtblk_blk.png")
+
+mob_rswhtblk_wht <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rswhtblk, y= kfr_white_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "Black-White Diversity Index",
+       y = "Intergenerational Mobility for Whites (P25)") +
+  theme_bw()
+
+ggsave("mob_rswhtblk_wht.png")
+
+# ECD/non-ECD v. intergen mob plots
+
+mob_rsecdnec_all <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rsecdnec, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "ECD/Non-ECD Diversity Index",
+       y = "Intergenerational Mobility (P25)") +
+  theme_bw()
+
+ggsave("mob_rsecdnec_all.png")
+
+mob_rsecdnec_blk <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rsecdnec, y= kfr_black_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "ECD/Non-ECD Diversity Index",
+       y = "Intergenerational Mobility for Blacks (P25)") +
+  theme_bw()
+
+ggsave("mob_rsecdnec_blk.png")
+
+mob_rsecdnec_wht <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rsecdnec, y= kfr_white_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "ECD/Non-ECD Diversity Index",
+       y = "Intergenerational Mobility for Whites (P25)") +
+  theme_bw()
+
+ggsave("mob_rsecdnec_wht.png")
 ```
 
 ```{r}
