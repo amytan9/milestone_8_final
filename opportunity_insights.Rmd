@@ -16,7 +16,9 @@ library(fs)
 library(devtools)
 library(ggthemr)
 library(cowplot)
+library(janitor)
 library(stargazer)
+library(readxl)
 library(tidyverse)
 
 
@@ -59,6 +61,26 @@ oi_county_outcomes$countyid <- as.numeric(oi_county_outcomes %>% pull(countyid))
 
 ```
 
+```{r}
+# OI covariates dataset for control variables Chetty used
+
+download.file("https://opportunityinsights.org/wp-content/uploads/2018/04/online_table4-2.xlsx",
+              "raw-data/county_covariates.xlsx", mode="wb")
+
+oi_cov <- read_xlsx("raw-data/county_covariates.xlsx", skip = 8) 
+
+oi_cov <- oi_cov[-c(1,2,3, 4), ]
+
+oi_cov <- oi_cov %>% clean_names()
+
+oi_cov$county_fips_2000 <- as.numeric(oi_cov %>% pull(county_fips_2000))
+oi_cov$state_fips <- as.numeric(oi_cov %>% pull(state_fips))
+
+# I also made sure that the merged column was numeric to merge with other datasets later
+
+oi_cov$countyid <- as.numeric(oi_cov %>% pull(county_fips_2000))
+```
+
 
 ```{r}
 download.file("https://stacks.stanford.edu/file/druid:db586ns4974/seda_county_poolsub_cs_v30.csv", "raw-data/seda_county_poolsub_cs.csv", mode="wb")
@@ -91,7 +113,8 @@ seda_long <- read.csv("raw-data/seda_county_long.csv")
 
 # smaller dataset by only covariates, not the full long test score data from SEDA
 seda_oi_cov <- full_join(county_poolsub, seda_cov, by="countyid") %>% 
-  full_join(., oi_county_outcomes, by = "countyid")
+  full_join(., oi_county_outcomes, by = "countyid") %>% 
+  full_join(., oi_cov, by = "countyid")
 
 # all SEDA data in one dataset
 seda_cov_joined <-full_join(county_poolsub, seda_cov, by="countyid") %>% 
@@ -111,55 +134,30 @@ seda_oi <- full_join(county_poolsub, seda_cov, by="countyid") %>%
 ```
 
 ```{r}
+# comparing how similar the measures of White-Black Relative Diversity and White-Hispanic Relative Diversity are, aka checking for collinearity
 
-# regressions on intergenerational mobility and avg test scores
+div_cor_plot <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=rswhtblk, y= rswhthsp, size= tot_asmts_ela)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "Black-White Relative Diversity",
+       y = "Hispanic-White Relative Diversity") +
+  theme_bw() +
+  guides(size = FALSE)
 
-# right now, test scores are still significant with all these controls 
+ggsave("div_cor_plot.png")
 
-kfr_avg_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
-
-# when you add the composite SES score, the significance of test scores go away
-
-kfr_avg_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
-
-kfr_avg_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
-
-summary(kfr_avg_math)
-summary(kfr_avg_math_1)
-
-# do the exact same thing with ELA
-
-kfr_avg_ela = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
-
-kfr_avg_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
-
-kfr_avg_ela_2 =  lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
-
-summary(kfr_avg_ela)
-
-# interesting result because for ELA (and NOT math), test scores are still
-# significant for intergenerational mobility regardless of SES + race
-
-summary(kfr_avg_ela_1)
-
+div_cor = lm(rswhtblk ~ rswhthsp, data = seda_oi_cov)
 ```
 
-```{r}
-# regression table for average test scores by subject on intergenerational mobility
-
-stargazer(kfr_avg_math, kfr_avg_math_1, kfr_avg_math_2, kfr_avg_ela, kfr_avg_ela_1, kfr_avg_ela_2,
-          type="html", 
-          dep.var.labels=c("Intergenerational Mobility"),
-          covariate.labels=c("Standardized Mean Math Score", "Standardized Mean ELA Score", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
-          column.labels = c("Without Controls", "With SES Composite", "With Additional Controls", "Without Controls","With SES Composite", "With Additional Controls"), out="kfr_avg_math_ela.html")
-
-```
 
 ```{r}
 
 # maybe customize if have time: 
 # ggthemr("fresh") 
 # ggthemr_reset()
+
 
 # plot of intergenerational mobility and avg test scores
 # added county size as size of bubbles, then hid legend to be able to see data more clearly
@@ -275,6 +273,17 @@ mob_rsecdnec_wht <- seda_oi_cov %>%
   theme_bw()
 
 ggsave("mob_rsecdnec_wht.png")
+
+kfr_ses <- seda_oi_cov %>% 
+  filter(subgroup == "all") %>% 
+  ggplot(aes(x=sesavgall, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(x = "SES Composite Score",
+       y = "Intergenerational Mobility (P25)") +
+  theme_bw()
+
+ggsave("kfr_ses.png")
 ```
 
 ```{r}
@@ -802,12 +811,93 @@ rsecdnec_comb_plot <- plot_grid(rsecdnec_ecd, rsecdnec_nec)
 
 ```
 
+
+```{r}
+```{r}
+# kfr regressions by each measure of diversity for math scores
+kfr_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol, data = seda_oi_cov)
+kfr_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk, data = seda_oi_cov)
+kfr_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp, data = seda_oi_cov)
+kfr_math_3 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+
+kfr_ela = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol, data = seda_oi_cov)
+kfr_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk, data = seda_oi_cov)
+kfr_ela_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp, data = seda_oi_cov)
+kfr_ela_3 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+
+stargazer(kfr_math, kfr_math_1, kfr_math_2, kfr_math_3, kfr_ela, kfr_ela_1, kfr_ela_2, kfr_ela_3,
+          type="html", 
+          dep.var.labels=c("Intergenerational Mobility"),
+          column.labels = c("Math", "ELA"),
+          covariate.labels=c("Standardized Mean Math Score", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","Standardized Mean ELA Score"),
+          column.separate = c(4,4), out="kfr_div.html")
+
+
+
+```
+
+```{r}
+# regressions on intergenerational mobility and avg test scores
+
+# right now, test scores are still significant with all these controls 
+
+kfr_avg_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+
+# when you add the composite SES score, the significance of test scores go away
+
+kfr_avg_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+
+kfr_avg_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+# adding in Chetty control variables that are not already included:
+# residential segregation, income inequality (gini), social capital (crime_violent)
+# racial_segregation + gini + crime_violent
+
+kfr_avg_math_3 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
+
+summary(kfr_avg_math)
+summary(kfr_avg_math_1)
+
+# do the exact same thing with ELA
+
+kfr_avg_ela = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+
+kfr_avg_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+
+kfr_avg_ela_2 =  lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+kfr_avg_ela_3 = lm(kfr_pooled_pooled_p25 ~ mn_avg_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
+
+summary(kfr_avg_ela)
+
+# interesting result because for ELA (and NOT math), test scores are still
+# significant for intergenerational mobility regardless of SES + race
+
+summary(kfr_avg_ela_1)
+
+```
+
+```{r}
+# regression table for average test scores by subject on intergenerational mobility
+
+stargazer(kfr_avg_math, kfr_avg_math_1, kfr_avg_math_2, kfr_avg_math_3, 
+          kfr_avg_ela, kfr_avg_ela_1, kfr_avg_ela_2, kfr_avg_ela_3,
+          type="html", 
+          dep.var.labels=c("Intergenerational Mobility"),
+          covariate.labels=c("Standardized Mean Math Score", "Standardized Mean ELA Score", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score", "Racial Segregation", "Gini Coefficient", "Rate of Violent Crime"),
+          column.labels = c("Without Controls", "With SES Composite", "With SEDA Controls", "With OI Controls", "Without Controls","With SES Composite", "With SEDA Controls", "With OI Controls"), out="kfr_avg_math_ela.html")
+
+```
+
 ```{r}
 # regressions for intergenerational mobility and average learning rate
+# Control variables: + racial_segregation + gini + violent_crime_rate
+# , "Racial Segregation", "Gini Coefficient", "Rate of Violent Crime"
 
 kfr_grd_math = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
 kfr_grd_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
 kfr_grd_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk+ rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+kfr_grd_math_3 = lm(kfr_pooled_pooled_p25 ~ mn_grd_mth_ol + rswhtblk+ rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
 
 # no matter which controls you add in, average learning rate (how much a grade
 # learns over time) is still significant for intergenerational mobility
@@ -820,7 +910,8 @@ summary(kfr_grd_math_1)
 kfr_grd_ela = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk +rswhthsp + rsecdnec, data = seda_oi_cov)
 kfr_grd_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk +rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
 kfr_grd_ela_2 = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk +rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
-  
+kfr_grd_ela_3 = lm(kfr_pooled_pooled_p25 ~ mn_grd_ela_ol + rswhtblk +rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
+    
 
 # same results of significance for ELA
 
@@ -831,18 +922,24 @@ summary(kfr_grd_ela_1)
 
 ```{r}
 # regression table for average learning rate results
-stargazer(kfr_grd_math, kfr_grd_math_1, kfr_grd_math_2, kfr_grd_ela, kfr_grd_ela_1, kfr_grd_ela_2,
+
+stargazer(kfr_grd_math, kfr_grd_math_1, kfr_grd_math_2, kfr_grd_math_3, kfr_grd_ela, kfr_grd_ela_1, kfr_grd_ela_2, kfr_grd_ela_3,
           type="html", 
           dep.var.labels=c("Intergenerational Mobility"),
-          covariate.labels=c("County Grade Slope of Mean Achievement in Math", "County Grade Slope for Mean Achievement in ELA", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
-          column.labels = c("Without Controls", "With SES Composite", "With Additional Controls", "Without Controls","With SES Composite", "With Additional Controls"), out="kfr_grd_math_ela.html")
+          covariate.labels=c("County Grade Slope of Mean Achievement in Math", "County Grade Slope for Mean Achievement in ELA", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score", "Racial Segregation", "Gini Coefficient", "Rate of Violent Crime"),
+          column.labels = c("Without Controls", "With SES Composite", "With SEDA Controls", "With OI Controls", "Without Controls","With SES Composite", "With SEDA Controls", "With OI Controls"), out="kfr_grd_math_ela.html")
 
 ```
 
 ```{r}
+# models for trends in average test scores
+# Control variables: + racial_segregation + gini + violent_crime_rate
+# , "Racial Segregation", "Gini Coefficient", "Rate of Violent Crime"
+
 kfr_coh_math = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
 kfr_coh_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
 kfr_coh_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+kfr_coh_math_3 = lm(kfr_pooled_pooled_p25 ~ mn_coh_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
 
 # improvement of scores for a school over time matters for intergen mobility
 
@@ -852,6 +949,7 @@ summary(kfr_coh_math_1)
 kfr_coh_ela = lm(kfr_pooled_pooled_p25 ~ mn_coh_ela_ol + rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
 kfr_coh_ela_1 = lm(kfr_pooled_pooled_p25 ~ mn_coh_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
 kfr_coh_ela_2 = lm(kfr_pooled_pooled_p25 ~ mn_coh_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+kfr_coh_ela_3 = lm(kfr_pooled_pooled_p25 ~ mn_coh_ela_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
 
 # same results for ELA
 
@@ -863,11 +961,11 @@ summary(kfr_coh_ela_1)
 ```{r}
 # regression table for trends in average test scores in the same grade
 
-stargazer(kfr_coh_math, kfr_coh_math_1, kfr_coh_math_2, kfr_coh_ela, kfr_coh_ela_1, kfr_coh_ela_2,
+stargazer(kfr_coh_math, kfr_coh_math_1, kfr_coh_math_2, kfr_coh_math_3, kfr_coh_ela, kfr_coh_ela_1, kfr_coh_ela_2, kfr_coh_ela_3,
           type="html", 
           dep.var.labels=c("Intergenerational Mobility"),
-          covariate.labels=c("County Cohort Slope of Mean Achievement in Math", "County Cohort Slope of Mean Achievement in ELA", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
-          column.labels = c("Without Controls", "With SES Composite", "With Additional Controls", "Without Controls","With SES Composite", "With Additional Controls"), out="kfr_coh_math_ela.html")
+          covariate.labels=c("County Cohort Slope of Mean Achievement in Math", "County Cohort Slope of Mean Achievement in ELA", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score", "Racial Segregation", "Gini Coefficient", "Rate of Violent Crime"),
+          column.labels = c("Without Controls", "With SES Composite", "With SEDA Controls", "With OI Controls", "Without Controls","With SES Composite", "With SEDA Controls", "With OI Controls"), out="kfr_coh_math_ela.html")
 ```
 
 ```{r}
