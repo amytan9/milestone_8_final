@@ -89,7 +89,6 @@ download.file("https://stacks.stanford.edu/file/druid:db586ns4974/seda_county_po
 # but has scores, average learning rate, and trend in average test scores
 
 county_poolsub <- read.csv("raw-data/seda_county_poolsub_cs.csv")
-
 ```
 
 ```{r }
@@ -293,8 +292,8 @@ ggsave("kfr_ses.png")
 perecd_25 <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <= .25) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= kfr_pooled_pooled_p25, size= tot_asmts_mth)) +
-  geom_point(alpha=.5) + 
+  ggplot(aes(x = mn_avg_mth_eb, y = kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
   labs(x = "Mean Standardized Math Score",
        y = "Intergenerational Mobility") +
@@ -305,7 +304,7 @@ perecd_50 <- seda_oi_cov %>%
   filter(subgroup == "all") %>% 
   filter(perecd <=.50 & perecd >.25) %>% 
   ggplot(aes(x=mn_avg_mth_eb, y= kfr_pooled_pooled_p25)) +
-  geom_point(alpha=.5) + 
+  geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
   labs(x = "Mean Standardized Math Score",
        y = "Intergenerational Mobility") +
@@ -315,7 +314,7 @@ perecd_75 <- seda_oi_cov %>%
   filter(subgroup == "all") %>% 
   filter(perecd <=.75 & perecd >.5) %>% 
   ggplot(aes(x=mn_avg_mth_eb, y= kfr_pooled_pooled_p25)) +
-  geom_point(alpha=.5) + 
+  geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
   labs(x = "Mean Standardized Math Score",
        y = "Intergenerational Mobility") +
@@ -324,9 +323,8 @@ perecd_75 <- seda_oi_cov %>%
 perecd_100 <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <=1.00 & perecd >.75) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= kfr_pooled_pooled_p25),
-         size = ) +
-  geom_point(alpha=.5) + 
+  ggplot(aes(x=mn_avg_mth_eb, y= kfr_pooled_pooled_p25)) +
+  geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
   labs(x = "Mean Standardized Math Score",
        y = "Intergenerational Mobility") +
@@ -341,51 +339,104 @@ perecd_comb <- plot_grid(perecd_25, perecd_50, perecd_75, perecd_100, labels = c
   label_x = 0, label_y = 0,
   hjust = -0.5, vjust = -0.5)
 
+ggsave("perecd_mob_Rplot.png")
+
 # saved this plot as perecd_mob_Rplot.png
+
+# for the perecd plots with switched x and y axis, do this:
+# perecd_25 <- seda_oi_cov %>% 
+#   filter(subgroup == "all") %>% 
+#   filter(perecd <= .25) %>% 
+#   ggplot(aes(y = mn_avg_mth_eb, x = kfr_pooled_pooled_p25)) +
+#   geom_point(alpha=.5) + 
+#   geom_smooth(method=lm, se= FALSE) +
+#   labs(y = "Mean Standardized Math Score",
+#        x = "Intergenerational Mobility") +
+#   theme_bw()
+# 
+# 
+# perecd_50 <- seda_oi_cov %>% 
+#   filter(subgroup == "all") %>% 
+#   filter(perecd <=.50 & perecd >.25) %>% 
+#   ggplot(aes(y=mn_avg_mth_eb, x= kfr_pooled_pooled_p25)) +
+#   geom_point(alpha=.5) + 
+#   geom_smooth(method=lm, se= FALSE) +
+#   labs(y = "Mean Standardized Math Score",
+#        x = "Intergenerational Mobility") +
+#   theme_bw()  
+# 
+# perecd_75 <- seda_oi_cov %>% 
+#   filter(subgroup == "all") %>% 
+#   filter(perecd <=.75 & perecd >.5) %>% 
+#   ggplot(aes(y=mn_avg_mth_eb, x= kfr_pooled_pooled_p25)) +
+#   geom_point(alpha=.5) + 
+#   geom_smooth(method=lm, se= FALSE) +
+#   labs(y = "Mean Standardized Math Score",
+#        x = "Intergenerational Mobility") +
+#   theme_bw()  
+# 
+# perecd_100 <- seda_oi_cov %>% 
+#   filter(subgroup == "all") %>% 
+#   filter(perecd <=1.00 & perecd >.75) %>% 
+#   ggplot(aes(y=mn_avg_mth_eb, x= kfr_pooled_pooled_p25)) +
+#   geom_point(alpha=.5) + 
+#   geom_smooth(method=lm, se= FALSE) +
+#   labs(y = "Mean Standardized Math Score",
+#        x = "Intergenerational Mobility") +
+#   theme_bw()  
+# 
+# # title = "Intergenerational Mobility and ELA Test Scores",
+# #        subtitle = "National Data on 3rd-8th graders, 2008-2016",
+# #        caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
+# 
+# perecd_comb <- plot_grid(perecd_25, perecd_50, perecd_75, perecd_100, labels = c("0 to 25% ECD", "25% to 50% ECD", "50% to 75% ECD", "75% to 100% ECD"), 
+#   label_size = 5,
+#   label_x = 0, label_y = 0,
+#   hjust = -0.5, vjust = -0.5)
 
 # looking at how diversity and mean scores vary by level of poverty in school 
 
 perecd_25_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <= .25) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()
 
 perecd_50_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <=.50 & perecd >.25) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y =mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()  
 
 perecd_75_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <=.75 & perecd >.5) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()  
 
 perecd_100_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <=1.00 & perecd >.75) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y =mn_avg_mth_eb, x = rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()  
 
@@ -411,44 +462,44 @@ ggsave("perecd_wb_comb.png")
 pov_25_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(povertyavgall <= .25) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y =mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()
 
 pov_50_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(povertyavgall <=.50 & povertyavgall >.25) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()  
 
 pov_75_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(povertyavgall <=.75 & povertyavgall >.5) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()  
 
 pov_100_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(povertyavgall <=1.00 & povertyavgall >.75) %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()  
 
@@ -470,14 +521,14 @@ ggsave("pov_wb_comb.png")
 
 pov_wb_bubble <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk, size = povertyavgall)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk, size = povertyavgall)) +
   geom_point(alpha=.25) + 
   # geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw() + 
-  geom_smooth(method = lm, se = TRUE) +
+  geom_smooth(method = lm, se = FALSE) +
   guides(size = FALSE)
 
 ggsave("pov_wb_bubble.png")
@@ -485,44 +536,43 @@ ggsave("pov_wb_bubble.png")
 # setting colors as racial group (maybe use ECD/non-ECD diversity index instead)
 pov_wb_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk, color= subgroup)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk, color= subgroup)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Black-White Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Black-White Relative Diversity",
        cex.axis = 1.5) +
   theme_bw()
 
 ggsave("pov_wb_race.png")
-
-
 ```
+
 ```{r}
 
 # seeing how ECD diversity varies by race
 rsecdnec_race_plot <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rsecdnec, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "ECD/Non-ECD Relative Diversity",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "ECD/Non-ECD Relative Diversity",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) + 
   guides(size = FALSE)
 
-ggsave("resecdnec_race_plot.png")
+ggsave("rsecdnec_race_plot.png")
 
 # seeing how concentration of school ECD's effect on test scores varies by race
 
 perecd_race_plot <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= perecd, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= perecd, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "Percent of ECD Students",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "Percent of ECD Students",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) + 
@@ -534,11 +584,11 @@ ggsave("perecd_race_plot.png")
 
 rsecdnec_test_by_ecd <- seda_oi_cov %>% 
   filter(subgroup == "ecd" | subgroup == "nec") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rsecdnec, size = tot_asmts_mth)) +
+  ggplot(aes(y =mn_avg_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "ECD/Non-ECD Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "ECD/Non-ECD Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) +
@@ -551,11 +601,11 @@ ggsave("rsecdnec_test_by_ecd.png")
 # racial diversity v. test score plot, overall with size as county size
 rswhtblk_test_all <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "White-Black Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "White-Black Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
    guides(size = FALSE)
@@ -566,11 +616,11 @@ ggsave("rswhtblk_test_all.png")
 
 hswhtblk_test_all <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= hswhtblk, size = tot_asmts_mth)) +
+  ggplot(aes(y =mn_avg_mth_eb, x = hswhtblk, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "White-Black Information Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "White-Black Information Index",
        cex.axis = 1.5) +
   theme_bw() +
    guides(size = FALSE)
@@ -579,11 +629,11 @@ ggsave("hswhtblk_test_all.png")
 
 rswhthsp_test_all <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhthsp, size = tot_asmts_mth)) +
+  ggplot(aes(y =mn_avg_mth_eb, x = rswhthsp, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "White-Hispanic Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "White-Hispanic Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
    guides(size = FALSE)
@@ -592,11 +642,11 @@ ggsave("rswhthsp_test_all.png")
 
 rsecdnec_test_all <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rsecdnec, size = tot_asmts_mth)) +
+  ggplot(aes(y = mn_avg_mth_eb, x = rsecdnec, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "ECD/Non-ECD Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "ECD/Non-ECD Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
    guides(size = FALSE)
@@ -606,11 +656,11 @@ ggsave("rsecdnec_test_all.png")
 # WB diversity v test score separated by race
 rswhtblk_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhtblk, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "White-Black Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "White-Black Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) +
@@ -621,11 +671,11 @@ ggsave("rswhtblk_test_by_race.png")
 # same thing using Information Theory Index instead of Relative Diversity
 hswhtblk_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= hswhtblk, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= hswhtblk, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "White-Black Information Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "White-Black Information Index",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) +
@@ -636,11 +686,11 @@ ggsave("hswhtblk_test_by_race.png")
 # WH diversity separated by race
 rswhthsp_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rswhthsp, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rswhthsp, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "White-Hispanic Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "White-Hispanic Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) +
@@ -651,11 +701,11 @@ ggsave("rswhthsp_test_by_race.png")
 # ECD diversity separated by race (already did it above so maybe take out)
 rsecdnec_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(x=mn_avg_mth_eb, y= rsecdnec, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_avg_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
-  geom_smooth(method=lm, se= TRUE) +
-  labs(x = "Mean Standardized Math Score",
-       y = "ECD/Non-ECD Relative Diversity Index",
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "Mean Standardized Math Score",
+       x = "ECD/Non-ECD Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) +
@@ -664,156 +714,8 @@ rsecdnec_test_by_race <- seda_oi_cov %>%
 ggsave("rsecdnec_test_by_race.png")
 ```
 
-```{r}
-# don't need this chunk now that I have discovered sub-groups in the data
-# and facet wrap takes care of sub-categories
+```{r regressions}
 
-# plots of school segregation on test scores by racial group (use seda_oi)
-
-# Variables:
-# rswhtblk
-# rswhthsp
-# rsecdnec
-# 
-# mn_wht
-# mn_asn
-# mn_blk
-# mn_hsp
-# mn_ecd
-# mn_nec
-
-rswhtblk_blk <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_blk, y= rswhtblk)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Black-White Segregation and Black Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw()  
-
-rswhtblk_wht <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_wht, y= rswhtblk)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Black-White Segregation and White Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw() 
-
-rswhtblk_comb_plot <- plot_grid(rswhtblk_blk, rswhtblk_wht)
-
-# rswhtblk_blk_1 <- seda_scores_cov %>%
-#   ggplot(aes(x=mn_blk, y= rswhtblk)) +
-#   geom_point(alpha=.5) +
-#   geom_smooth(method=lm, se= FALSE)
-#
-# rswhtblk_wht_1 <- seda_scores_cov %>%
-#   ggplot(aes(x=mn_wht, y= rswhtblk)) +
-#   geom_point(alpha=.5) +
-#   geom_smooth(method=lm, se= FALSE)
-
-# # --- test---
-# plot_row <- plot_grid(rswhtblk_blk_1, rswhtblk_wht_1)
-# 
-# # now add the title
-# title <- ggdraw() + 
-#   draw_label(
-#     "Black-White Segregation and Test Scores by Race",
-#     fontface = 'bold',
-#     x = 0,
-#     hjust = 0
-#   ) +
-#   theme(
-#     # add margin on the left of the drawing canvas,
-#     # so title is aligned with left edge of first plot
-#     plot.margin = margin(0, 0, 0, 7)
-#   )
-# x <-plot_grid(
-#   title, plot_row,
-#   ncol = 1,
-#   # rel_heights values control vertical title margins
-#   rel_heights = c(0.1, 1),
-#   labels = c("Black Students", "White Students")
-# )
-# 
-# 
-# 
-# title_theme <- ggdraw() +
-#   draw_label("Socio-economic measures", 
-#              fontfamily = theme_georgia()$text$family, 
-#              fontface = theme_georgia()$plot.title$face, x = 0.05, hjust = 0)
-# plot_grid(title_theme, gridded, ncol = 1, rel_heights = c(0.2, 1))
-
-
-rswhthsp_hsp <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_hsp, y= rswhthsp)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Hispanic-White Segregation and Hispanic Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw() 
-
-
-rswhthsp_wht <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_wht, y= rswhthsp)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Hispanic-White Segregation and White Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw()  
-
-rswhthsp_wht <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_wht, y= rswhthsp)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "Hispanic-White Segregation and White Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw()  
-
-rsecdnec_ecd <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_ecd, y= rsecdnec)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "ECD/Non-ECD Segregation and ECD Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw()  
-
-rsecdnec_nec <- seda_scores_cov %>% 
-  ggplot(aes(x=mn_nec, y= rsecdnec)) +
-  geom_point(alpha=.5) + 
-  geom_smooth(method=lm, se= FALSE) +
-  labs(title = "ECD/Non-ECD Segregation and Non-ECD Students' Scores",
-       subtitle = "National Data on 3rd-8th graders, 2008-2016",
-       caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-       x = "Mean Standardized Score",
-       y = "Relative Diversity Index") +
-  theme_bw()  
-
-rsecdnec_comb_plot <- plot_grid(rsecdnec_ecd, rsecdnec_nec)
-
-# maybe add in subsetting by income later?
-
-```
-
-
-```{r}
-```{r}
 # kfr regressions by each measure of diversity for math scores
 kfr_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol, data = seda_oi_cov)
 kfr_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk, data = seda_oi_cov)
@@ -854,6 +756,13 @@ kfr_avg_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp 
 # racial_segregation + gini + crime_violent
 
 kfr_avg_math_3 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp + racial_segregation + gini + violent_crime_rate, data = seda_oi_cov)
+
+x = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp, data = (seda_oi_cov %>% filter(subgroup == "wht")))
+y = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhthsp, data = (seda_oi_cov %>% filter(subgroup == "wht")))
+x1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp, data = (seda_oi_cov %>% filter(subgroup == "hsp")))
+y1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhthsp, data = (seda_oi_cov %>% filter(subgroup == "hsp")))
+x2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp, data = (seda_oi_cov %>% filter(subgroup == "blk")))
+y2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhthsp, data = (seda_oi_cov %>% filter(subgroup == "blk")))
 
 summary(kfr_avg_math)
 summary(kfr_avg_math_1)
