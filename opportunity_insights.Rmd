@@ -549,20 +549,48 @@ ggsave("pov_wb_race.png")
 
 ```{r}
 
-# seeing how ECD diversity varies by race
-rsecdnec_race_plot <- seda_oi_cov %>% 
+## seeing how ECD diversity varies by race
+# avg test scores
+rsecdnec_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
   ggplot(aes(y=mn_avg_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
   labs(y = "Mean Standardized Math Score",
-       x = "ECD/Non-ECD Relative Diversity",
+       x = "ECD/Non-ECD Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
-  facet_wrap(~subgroup) + 
-  guides(size = FALSE)
+  facet_wrap(~subgroup) +
+   guides(size = FALSE)
+ggsave("rsecdnec_test_by_race.png")
 
-ggsave("rsecdnec_race_plot.png")
+rsecdnec_grd_by_race <- seda_oi_cov %>% 
+  filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
+  ggplot(aes(y=mn_grd_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "County Grade Slope of Mean Math Scores",
+       x = "ECD/Non-ECD Relative Diversity Index",
+       cex.axis = 1.5) +
+  theme_bw() +
+  facet_wrap(~subgroup) +
+   guides(size = FALSE)
+
+ggsave("rsecdnec_grd_by_race.png")
+
+rsecdnec_coh_by_race <- seda_oi_cov %>% 
+  filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
+  ggplot(aes(y=mn_coh_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "County Cohort Slope of Mean Math Scores",
+       x = "ECD/Non-ECD Relative Diversity Index",
+       cex.axis = 1.5) +
+  theme_bw() +
+  facet_wrap(~subgroup) +
+   guides(size = FALSE)
+
+ggsave("rsecdnec_coh_by_race.png")
 
 # seeing how concentration of school ECD's effect on test scores varies by race
 
@@ -612,7 +640,7 @@ rswhtblk_test_all <- seda_oi_cov %>%
 
 ggsave("rswhtblk_test_all.png")
 
-# maybe don't need this 
+# maybe don't need this, information index instead of relative diversity index
 
 hswhtblk_test_all <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
@@ -653,7 +681,7 @@ rsecdnec_test_all <- seda_oi_cov %>%
 
 ggsave("rsecdnec_test_all.png")
 
-# WB diversity v test score separated by race
+# WB diversity v test score separated by race (avg scores)
 rswhtblk_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
   ggplot(aes(y=mn_avg_mth_eb, x= rswhtblk, size = tot_asmts_mth)) +
@@ -667,6 +695,34 @@ rswhtblk_test_by_race <- seda_oi_cov %>%
    guides(size = FALSE)
 
 ggsave("rswhtblk_test_by_race.png")
+
+# WB diversity by race (avg learning rates)
+rswhtblk_grd_by_race <- seda_oi_cov %>% 
+  filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
+  ggplot(aes(y=mn_grd_mth_eb, x= rswhtblk, size = tot_asmts_mth)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "County Grade Slope of Mean Math Scores",
+       x = "White-Black Relative Diversity Index",
+       cex.axis = 1.5) +
+  theme_bw() +
+  facet_wrap(~subgroup) +
+   guides(size = FALSE)
+ggsave("rswhtblk_grd_by_race.png")
+
+# WB diversity by race (trends in avg test scores)
+rswhtblk_coh_by_race <- seda_oi_cov %>% 
+  filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
+  ggplot(aes(y=mn_coh_mth_eb, x= rswhtblk, size = tot_asmts_mth)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "County Cohort Slope of Mean Math Scores",
+       x = "White-Black Relative Diversity Index",
+       cex.axis = 1.5) +
+  theme_bw() +
+  facet_wrap(~subgroup) +
+   guides(size = FALSE)
+ggsave("rswhtblk_coh_by_race.png")
 
 # same thing using Information Theory Index instead of Relative Diversity
 hswhtblk_test_by_race <- seda_oi_cov %>% 
@@ -683,7 +739,9 @@ hswhtblk_test_by_race <- seda_oi_cov %>%
 
 ggsave("hswhtblk_test_by_race.png")
 
-# WH diversity separated by race
+```
+```{r}
+# WH diversity separated by race (avg scores)
 rswhthsp_test_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
   ggplot(aes(y=mn_avg_mth_eb, x= rswhthsp, size = tot_asmts_mth)) +
@@ -698,25 +756,41 @@ rswhthsp_test_by_race <- seda_oi_cov %>%
 
 ggsave("rswhthsp_test_by_race.png")
 
-# ECD diversity separated by race (already did it above so maybe take out)
-rsecdnec_test_by_race <- seda_oi_cov %>% 
+# WH diversity separated by race (avg learned rates)
+rswhthsp_grd_by_race <- seda_oi_cov %>% 
   filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
-  ggplot(aes(y=mn_avg_mth_eb, x= rsecdnec, size = tot_asmts_mth)) +
+  ggplot(aes(y=mn_grd_mth_eb, x= rswhthsp, size = tot_asmts_mth)) +
   geom_point(alpha=.25) + 
   geom_smooth(method=lm, se= FALSE) +
-  labs(y = "Mean Standardized Math Score",
-       x = "ECD/Non-ECD Relative Diversity Index",
+  labs(y = "County Grade Slope of Mean Math Scores",
+       x = "White-Hispanic Relative Diversity Index",
        cex.axis = 1.5) +
   theme_bw() +
   facet_wrap(~subgroup) +
    guides(size = FALSE)
 
-ggsave("rsecdnec_test_by_race.png")
+ggsave("rswhthsp_grd_by_race.png")
+
+# WH Diversity separated by race (trends in avg. test score)
+rswhthsp_coh_by_race <- seda_oi_cov %>% 
+  filter(subgroup == "asn" | subgroup == "blk" | subgroup == "hsp" | subgroup == "wht") %>% 
+  ggplot(aes(y=mn_coh_mth_eb, x= rswhthsp, size = tot_asmts_mth)) +
+  geom_point(alpha=.25) + 
+  geom_smooth(method=lm, se= FALSE) +
+  labs(y = "County Cohort Slope of Mean Math Scores",
+       x = "White-Hispanic Relative Diversity Index",
+       cex.axis = 1.5) +
+  theme_bw() +
+  facet_wrap(~subgroup) +
+   guides(size = FALSE)
+
+ggsave("rswhthsp_coh_by_race.png")
 ```
 
 ```{r regressions}
 
-# kfr regressions by each measure of diversity for math scores
+# kfr regressions by each measure of diversity for math scores (maybe don't include if unnecessary)
+
 kfr_math = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol, data = seda_oi_cov)
 kfr_math_1 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk, data = seda_oi_cov)
 kfr_math_2 = lm(kfr_pooled_pooled_p25 ~ mn_avg_mth_ol + rswhtblk + rswhthsp, data = seda_oi_cov)
@@ -733,8 +807,6 @@ stargazer(kfr_math, kfr_math_1, kfr_math_2, kfr_math_3, kfr_ela, kfr_ela_1, kfr_
           column.labels = c("Math", "ELA"),
           covariate.labels=c("Standardized Mean Math Score", "Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","Standardized Mean ELA Score"),
           column.separate = c(4,4), out="kfr_div.html")
-
-
 
 ```
 
