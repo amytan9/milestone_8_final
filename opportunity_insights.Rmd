@@ -624,6 +624,19 @@ rsecdnec_test_by_ecd <- seda_oi_cov %>%
 
 ggsave("rsecdnec_test_by_ecd.png")
 ```
+```{r}
+# showing correlation between information theory index and relative diversity index
+
+rs_hs_reg <- lm(rswhtblk ~ hswhtblk, data = seda_oi_cov)
+
+summary(rs_hs_reg)
+
+seda_oi_cov_clean <- seda_oi_cov %>% filter(!is.na(rswhtblk)) %>% filter(!is.na(hswhtblk))
+
+correl = dplyr::summarise(seda_oi_cov_clean, correl = cor(rswhtblk, hswhtblk))
+
+print(correl)
+```
 
 ```{r}
 # racial diversity v. test score plot, overall with size as county size
