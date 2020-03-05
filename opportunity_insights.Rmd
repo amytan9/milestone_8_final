@@ -341,61 +341,6 @@ perecd_comb <- plot_grid(perecd_25, perecd_50, perecd_75, perecd_100, labels = c
 
 ggsave("perecd_mob_Rplot.png")
 
-# saved this plot as perecd_mob_Rplot.png
-
-# for the perecd plots with switched x and y axis, do this:
-# perecd_25 <- seda_oi_cov %>% 
-#   filter(subgroup == "all") %>% 
-#   filter(perecd <= .25) %>% 
-#   ggplot(aes(y = mn_avg_mth_eb, x = kfr_pooled_pooled_p25)) +
-#   geom_point(alpha=.5) + 
-#   geom_smooth(method=lm, se= FALSE) +
-#   labs(y = "Mean Standardized Math Score",
-#        x = "Intergenerational Mobility") +
-#   theme_bw()
-# 
-# 
-# perecd_50 <- seda_oi_cov %>% 
-#   filter(subgroup == "all") %>% 
-#   filter(perecd <=.50 & perecd >.25) %>% 
-#   ggplot(aes(y=mn_avg_mth_eb, x= kfr_pooled_pooled_p25)) +
-#   geom_point(alpha=.5) + 
-#   geom_smooth(method=lm, se= FALSE) +
-#   labs(y = "Mean Standardized Math Score",
-#        x = "Intergenerational Mobility") +
-#   theme_bw()  
-# 
-# perecd_75 <- seda_oi_cov %>% 
-#   filter(subgroup == "all") %>% 
-#   filter(perecd <=.75 & perecd >.5) %>% 
-#   ggplot(aes(y=mn_avg_mth_eb, x= kfr_pooled_pooled_p25)) +
-#   geom_point(alpha=.5) + 
-#   geom_smooth(method=lm, se= FALSE) +
-#   labs(y = "Mean Standardized Math Score",
-#        x = "Intergenerational Mobility") +
-#   theme_bw()  
-# 
-# perecd_100 <- seda_oi_cov %>% 
-#   filter(subgroup == "all") %>% 
-#   filter(perecd <=1.00 & perecd >.75) %>% 
-#   ggplot(aes(y=mn_avg_mth_eb, x= kfr_pooled_pooled_p25)) +
-#   geom_point(alpha=.5) + 
-#   geom_smooth(method=lm, se= FALSE) +
-#   labs(y = "Mean Standardized Math Score",
-#        x = "Intergenerational Mobility") +
-#   theme_bw()  
-# 
-# # title = "Intergenerational Mobility and ELA Test Scores",
-# #        subtitle = "National Data on 3rd-8th graders, 2008-2016",
-# #        caption = "Data from Opportunity Insights and Stanford Education Data Archive.",
-# 
-# perecd_comb <- plot_grid(perecd_25, perecd_50, perecd_75, perecd_100, labels = c("0 to 25% ECD", "25% to 50% ECD", "50% to 75% ECD", "75% to 100% ECD"), 
-#   label_size = 5,
-#   label_x = 0, label_y = 0,
-#   hjust = -0.5, vjust = -0.5)
-
-# looking at how diversity and mean scores vary by level of poverty in school 
-
 perecd_25_wb <- seda_oi_cov %>% 
   filter(subgroup == "all") %>% 
   filter(perecd <= .25) %>% 
@@ -624,6 +569,7 @@ rsecdnec_test_by_ecd <- seda_oi_cov %>%
 
 ggsave("rsecdnec_test_by_ecd.png")
 ```
+
 ```{r}
 # showing correlation between information theory index and relative diversity index
 
@@ -970,20 +916,101 @@ div_score <- lm(mn_avg_mth_ol~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_co
 # interesting that exposure to other ECD is not as important for math as it is
 # for ELA
 summary(div_score)
-
-div_score_ela <-lm(mn_avg_ela_ol~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
-summary(div_score_ela) 
+ 
 
 # with controls added
-
-div_score_cont <- lm(mn_avg_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+div_score_cont <- lm(mn_avg_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+div_score_cont_1 <- lm(mn_avg_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
 
 summary(div_score_cont)
 
-div_score_ela_cont <-lm(mn_avg_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall+ perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+div_score_ela <-lm(mn_avg_ela_ol~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+summary(div_score_ela)
+
+# control variables added
+div_score_ela_cont <-lm(mn_avg_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+div_score_ela_cont_1 <-lm(mn_avg_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall+ perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
 
 summary(div_score_ela_cont) 
 
+```
+
+
+```{r}
+# regression table for math scores by diversity factors 
+
+stargazer(div_score, div_score_cont, div_score_cont_1, div_score_ela, div_score_ela_cont, div_score_ela_cont_1, 
+          type="html", 
+          dep.var.labels=c("Standardized Math Scores", "Standardized ELA Scores"),
+          covariate.labels=c("Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
+          column.labels = c("Without Controls", "With SES Composite", "With SEDA Controls", "Without Controls", "With SES Composite", "With SEDA Controls"), out="div_score_subject.html")
+```
+
+```{r}
+# regressions on the correlations between diversity within school and grade slope of scores 
+# took out "sesavgall" and only included it in the regressions with controls 
+div_grd_score <- lm(mn_grd_mth_ol ~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+
+summary(div_grd_score)
+
+div_grd_score_ela <-lm(mn_grd_ela_ol~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+summary(div_grd_score_ela) 
+
+# with controls added
+div_grd_score_cont <- lm(mn_grd_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+div_grd_score_cont_1 <- lm(mn_grd_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+summary(div_grd_score_cont)
+
+div_grd_score_ela_cont <-lm(mn_grd_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+div_grd_score_ela_cont_1 <-lm(mn_grd_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall+ perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+summary(div_grd_score_ela_cont) 
+
+```
+
+```{r}
+# regression table of grade slopes and diversity
+
+stargazer(div_grd_score, div_grd_score_cont, div_grd_score_cont_1, div_grd_score_ela, div_grd_score_ela_cont, div_grd_score_ela_cont_1,
+          type="html", 
+          dep.var.labels=c("County Grade Slope of Math Scores", "County Grade Slope of ELA Scores"),
+          covariate.labels=c("Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
+          column.labels = c("Without Controls",  "With SES Composite", "With SEDA Controls", "Without Controls",  "With SES Composite", "With SEDA Controls"), out="div_grd_score_subject.html")
+
+```
+
+
+```{r}
+# regressions on the correlations between diversity within school and county cohort slopes of scores 
+# took out "sesavgall" and only included it in the regressions with controls 
+div_coh_score <- lm(mn_coh_mth_ol ~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+
+summary(div_coh_score)
+
+div_coh_score_ela <-lm(mn_coh_ela_ol~ rswhtblk + rswhthsp + rsecdnec, data = seda_oi_cov)
+summary(div_coh_score_ela) 
+
+# with controls added
+div_coh_score_cont <- lm(mn_coh_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+div_coh_score_cont_1 <- lm(mn_coh_mth_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall + perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+summary(div_coh_score_cont)
+div_coh_score_ela_cont <-lm(mn_coh_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall, data = seda_oi_cov)
+div_coh_score_ela_cont_1 <-lm(mn_coh_ela_ol~ rswhtblk + rswhthsp + rsecdnec + sesavgall+ perblk + perhsp + perecd + sesavgwhtblk + sesavgwhthsp, data = seda_oi_cov)
+
+summary(div_coh_score_ela_cont) 
+```
+
+```{r}
+# regression table of cohort slopes and diversity
+
+stargazer(div_coh_score, div_coh_score_cont, div_coh_score_cont_1, div_coh_score_ela, div_coh_score_ela_cont,div_coh_score_ela_cont_1, 
+          type="html", 
+          dep.var.labels=c("County Cohort Slope of Math Scores", "County Cohort Slope of ELA Scores"),
+          covariate.labels=c("Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
+          column.labels = c("Without Controls", "With SES Composite", "With SEDA Controls", "Without Controls", "With SES Composite", "With SEDA Controls"), out="div_coh_score_subject.html")
 ```
 
 ```{r}
@@ -1011,13 +1038,6 @@ div_score_wht_cont <- lm(mn_avg_mth_ol~ rswhtblk + rswhthsp + rsecdnec+ sesavgal
 
 
 ```{r}
-# regression table for math scores by diversity factors 
-
-stargazer(div_score, div_score_cont, div_score_ela, div_score_ela_cont, 
-          type="html", 
-          dep.var.labels=c("Standardized Math Scores", "Standardized ELA Scores"),
-          covariate.labels=c("Relative Diversity index between schools: White/Black", "Relative Diversity index between schools: White/Hispanic", "Relative Diversity index between schools: Economically disadvantaged/Non ECD","SES Composite Score", "Percent Blacks in the Grade", "Percent Hispanic in the Grade", "Percent Economically Disadvantaged in the Grade", "White-Black Gap in SES Composite Score", "White-Hispanic Gap in SES Composite Score"),
-          column.labels = c("Without Controls", "With Controls", "Without Controls", "With Controls"), out="div_score_subject.html")
 
 # table for diversity effects on math scores by race
 
